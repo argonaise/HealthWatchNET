@@ -1,0 +1,77 @@
+﻿@model System.Data.DataTable
+@using System.Data;
+
+@{
+    Layout = null;
+
+    string toggle_class = "";
+    bool toggle = false;
+
+    string desc_first = "";
+    string query_first = "";
+    bool first = true;
+}
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>AutoCompleteQuery</title>
+    <link href="~/css/theme_purple.css" rel="stylesheet" type="text/css" />
+</head>
+<body bgcolor="white">
+
+<table cellpadding="0" cellspacing="0">
+<tr>
+	<td><input type="button" value="닫기" style="width:100px; height:30px;" onclick="parent.autocomplete_abort()"></td>
+</tr>
+</table>
+
+<table width="100%" cellspacing="0" cellpadding="0">
+  <tr align="center" class="line_toggle_1" align="center">
+    <th width="50%">검사조건</td>
+    <th width="50%">QUERY</td>
+  </tr>
+
+    <div>
+        @foreach (DataRow row in Model.Rows)
+        {
+            toggle = !toggle;
+            if (first == true)
+            {
+                desc_first = row["SQ_DESC"].ToString();
+                query_first = row["SQ_QUERY"].ToString();
+            }
+            string desc = ((string)row["SQ_DESC"]).Replace("\\'\\'", "'").Replace("\"", "&quot;");
+            string query = ((string)row["SQ_QUERY"]).Replace("\\'\\'", "'").Replace("\"", "&quot;");
+                
+            if (toggle)
+            {
+                toggle_class = "line_toggle_2";
+            }
+            else
+            {
+                toggle_class = "line_toggle_1";
+            }
+             
+            <tr class="@toggle_class" align="center">
+            
+            <td><a href='javascript:autocomplete("@desc","@query");'>@desc</a></td>
+            <td align="left"><a href='javascript:autocomplete("@desc","@query");'>@query.Substring(0,100)...</a></td>
+            
+            </tr>
+        }
+    </div>
+</table>
+<script type="text/javascript">
+    function autocomplete(r1, r2) {
+        parent.autocomplete_complete_query(r1, r2);
+    }
+
+    function autocomplete_first() {
+        autocomplete("@desc_first", "@query_first");
+    }
+</script>
+</body>
+</html>

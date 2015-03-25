@@ -1,0 +1,236 @@
+﻿@{
+    ViewBag.Title = "TestPackage";
+    Layout = "~/Views/Shared/Layout.cshtml";
+}
+<script type="text/javascript" src="~/Script/jquery-1.7.min.js"></script>
+<script type="text/javascript" src="~/Script/jquery.event.drag-2.2.js"></script>
+<script type="text/javascript" src="~/Script/jquery.jsonp-1.1.0.min.js"></script>
+
+<script type="text/javascript" src="~/Script/RemoteModel/slick.testpackage.js"></script>
+<script type="text/javascript" src="~/Script/RemoteModel/slick.testpackageitem.js"></script>
+<script type="text/javascript" src="~/Script/slick.core.js"></script>
+<script type="text/javascript" src="~/Script/slick.grid.js"></script>
+
+<style>
+    .cell-story {
+        white-space: normal !important;
+        line-height: 19px !important;
+    }
+
+    .loading-indicator {
+        display: inline-block;
+        padding: 12px;
+        background: white;
+        -opacity: 0.5;
+        color: black;
+        font-weight: bold;
+        z-index: 9999;
+        border: 1px solid red;
+        -moz-border-radius: 10px;
+        -webkit-border-radius: 10px;
+        -moz-box-shadow: 0 0 5px red;
+        -webkit-box-shadow: 0px 0px 5px red;
+        -text-shadow: 1px 1px 1px white;
+    }
+
+    .loading-indicator label {
+        padding-left: 20px;
+        font-family: "Malgun gothic", "NanumGothic", "AppleGothic", "Dotum";
+        font-size: 14px;
+        font-weight: bold;
+        background: url('~/Images/site/ajax-loader-small.gif') no-repeat center left;
+    }
+    
+    .slick-highlighted
+    {
+        background: #EEEEAA;
+    }
+</style>
+
+<h2>검사패키지 검색</h2>
+
+<table>
+<tr>
+    <td>
+    <div style="float:right; display:inline-block;">
+    패키지명 찾아보기: <input type="text" id="txtSearch" value="" />
+    </div>
+    </td>
+    <td></td>
+</tr>
+<tr>
+    <td>
+        <div id="myAjaxGrid" class="slickgrid" style="width:530px; height:600px; border:1px solid #C0C0C0;"></div>
+    </td>
+    <td>
+        <div id="myAjaxGridDetail" class="slickgrid" style="width:450px; height:600px; border:1px solid #C0C0C0;">
+        <table width="100%" height="100%"><tr><td width="100%" height="100%" align="center" valign="middle" style="font-weight:bold; color:#808080">왼쪽 패널에서 패키지를 선택하세요</td></tr></table>
+        </div>
+    </td>
+</tr>
+</table>
+
+<script type="text/javascript">
+    var ajax_grid;
+    var loader = new Slick.Data.RemoteModelPackage();
+
+    var pkgCodeFormatter = function (row, cell, value, columnDef, dataContext) {
+        return "<a href='javascript:parent.viewPkg(\"" + dataContext["PKGCODE"] + "\"," + dataContext["index"] + ");' onfocus='blur();'>" + dataContext["PKGCODE"] + "</a>";
+    };
+    var pkgNameFormatter = function (row, cell, value, columnDef, dataContext) {
+        return "<a href='javascript:parent.viewPkg(\"" + dataContext["PKGCODE"] + "\"," + dataContext["index"] + ");' onfocus='blur();'>" + dataContext["PKGNAME"] + "</a>";
+    };
+
+    var ajax_columns = [
+        { id: "NO", name: "#", field: "NO", width: 50, sortable: true, cssClass: "slick-center", headerCssClass: "slick-center" },
+        { id: "PKGCODE", name: "패키지코드", field: "PKGCODE", width: 100, sortable: true, cssClass: "slick-center", headerCssClass: "slick-center", formatter: pkgCodeFormatter },
+        { id: "PKGNAME", name: "패키지명", field: "PKGNAME", width: 300, sortable: true, headerCssClass: "slick-center", formatter: pkgNameFormatter },
+        { id: "PKGCOUNT", name: "검사수", field: "PKGCOUNT", width: 60, sortable: true, cssClass: "slick-center", headerCssClass: "slick-center" }
+    ];
+
+    var ajax_options = {
+        rowHeight: 30,
+        editable: false,
+        enableAddRow: false,
+        enableColumnReorder: false,
+        enableCellNavigation: false
+    };
+
+    var loadingIndicator = null;
+
+    $(function () {
+        ajax_grid = new Slick.Grid("#myAjaxGrid", loader.data, ajax_columns, ajax_options);
+
+        ajax_grid.onViewportChanged.subscribe(function (e, args) {
+            var vp = ajax_grid.getViewport();
+            loader.ensureData(vp.top, vp.bottom);
+        });
+
+        ajax_grid.onSort.subscribe(function (e, args) {
+            loader.setSort(args.sortCol.field, args.sortAsc ? 1 : -1);
+            var vp = ajax_grid.getViewport();
+            loader.ensureData(vp.top, vp.bottom);
+        });
+
+        loader.onDataLoading.subscribe(function () {
+            if (!loadingIndicator) {
+                loadingIndicator = $("<span class='loading-indicator'><label><img src=\"/Image/site/ajax-loader-small.gif\" /> 데이터 읽는중...</label></span>").appendTo(document.body);
+                var $g = $("#myAjaxGrid");
+
+                loadingIndicator
+                    .css("position", "absolute")
+                    .css("top", $g.position().top + $g.height() / 2 - loadingIndicator.height() / 2)
+                    .css("left", $g.position().left + $g.width() / 2 - loadingIndicator.width() / 2);
+            }
+
+            loadingIndicator.show();
+        });
+
+        loader.onDataLoaded.subscribe(function (e, args) {
+            for (var i = args.from; i <= args.to; i++) {
+                ajax_grid.invalidateRow(i);
+            }
+
+            ajax_grid.updateRowCount();
+            ajax_grid.render();
+
+            loadingIndicator.fadeOut();
+        });
+
+        $("#txtSearch").keyup(function (e) {
+            if (e.which == 13) {
+                loader.setSearch(encodeURIComponent($(this).val()));
+                var vp = ajax_grid.getViewport();
+                loader.ensureData(vp.top, vp.bottom);
+            }
+        });
+
+        // load the first page
+        ajax_grid.onViewportChanged.notify();
+    })
+
+    //----------------------------------------------------------------------------------------------------------------------------------------------
+
+    var ajax_grid_d;
+    var loader_d = new Slick.Data.RemoteModelPackageItem();
+
+    var ajax_columns_d = [
+        { id: "NO", name: "#", field: "NO", width: 50, sortable: true, cssClass: "slick-center", headerCssClass: "slick-center" },
+        { id: "TST_CD", name: "검사코드", field: "TST_CD", width: 120, sortable: true, cssClass: "slick-center", headerCssClass: "slick-center" },
+        { id: "TST_NAME", name: "검사명", field: "TST_NAME", width: 260, sortable: true, headerCssClass: "slick-center" }
+    ];
+
+    var ajax_options_d = {
+        rowHeight: 30,
+        editable: false,
+        enableAddRow: false,
+        enableColumnReorder: false,
+        enableCellNavigation: false
+    };
+
+    var loadingIndicator_d = null;
+
+    function loadGrid() {
+        $(function () {
+            ajax_grid_d = new Slick.Grid("#myAjaxGridDetail", loader_d.data, ajax_columns_d, ajax_options_d);
+
+            ajax_grid_d.onViewportChanged.subscribe(function (e, args) {
+                var vp = ajax_grid_d.getViewport();
+                loader_d.ensureData(vp.top, vp.bottom);
+            });
+
+            ajax_grid_d.onSort.subscribe(function (e, args) {
+                loader_d.setSort(args.sortCol.field, args.sortAsc ? 1 : -1);
+                var vp = ajax_grid_d.getViewport();
+                loader_d.ensureData(vp.top, vp.bottom);
+            });
+
+            loader_d.onDataLoading.subscribe(function () {
+                if (!loadingIndicator_d) {
+                    loadingIndicator_d = $("<span class='loading-indicator'><label><img src=\"/Image/site/ajax-loader-small.gif\" /> 데이터 읽는중...</label></span>").appendTo(document.body);
+                    var $g = $("#myAjaxGridDetail");
+
+                    loadingIndicator_d
+                    .css("position", "absolute")
+                    .css("top", $g.position().top + $g.height() / 2 - loadingIndicator.height() / 2)
+                    .css("left", $g.position().left + $g.width() / 2 - loadingIndicator.width() / 2);
+                }
+
+                loadingIndicator_d.show();
+            });
+
+            loader_d.onDataLoaded.subscribe(function (e, args) {
+                for (var i = args.from; i <= args.to; i++) {
+                    ajax_grid_d.invalidateRow(i);
+                }
+
+                ajax_grid_d.updateRowCount();
+                ajax_grid_d.render();
+
+                loadingIndicator_d.fadeOut();
+            });
+
+            // load the first page
+            //ajax_grid_d.onViewportChanged.notify();
+        })
+    }
+
+    var package_selected = false;
+
+    function viewPkg(pkgcode, index) {
+        var hash = {};
+        index = index - 1;
+        hash[index] = { "NO": "slick-highlighted", "PKGCODE": "slick-highlighted", "PKGNAME": "slick-highlighted", "PKGCOUNT": "slick-highlighted" };
+        ajax_grid.setCellCssStyles("slick-highlighted", hash);
+        loadGrid();
+
+        if (package_selected == false) {
+            ajax_grid_d.onViewportChanged.notify();
+            package_selected = true;
+        }
+        loader_d.setSearch(pkgcode);
+        var vp = ajax_grid_d.getViewport();
+        loader_d.ensureData(vp.top, vp.bottom);
+    }
+
+</script>

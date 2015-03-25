@@ -1,0 +1,76 @@
+﻿@model System.Data.DataTable
+@using System.Data;
+
+@{
+    Layout = null;
+
+    string toggle_class = "";
+    bool toggle = false;
+
+    string name_first = "";
+    string code_first = "";
+    bool first = true;
+}
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>AutoCompletePackageList</title>
+    <link href="~/css/theme_purple.css" rel="stylesheet" type="text/css" />
+</head>
+<body bgcolor="white">
+
+<table cellpadding="0" cellspacing="0">
+<tr>
+	<td><div class="tooltip">※ 검색조건(@ViewBag.SearchText)에 해당되는 기기목록 (총 @Model.Rows.Count 건)</div></td>
+	<td><input type="button" value="닫기" style="width:100px; height:30px;" onclick="parent.autocomplete_abort()"></td>
+</tr>
+</table>
+
+<table width="100%" cellspacing="0" cellpadding="0">
+  <tr align="center" class="line_toggle_1" align="center">
+    <th width="50%">패키지명</td>
+    <th width="50%">패키지코드</td>
+  </tr>
+
+    <div>
+        @foreach (DataRow row in Model.Rows)
+        {
+            toggle = !toggle;
+            if (first == true)
+            {
+                name_first = row["PKGNAME"].ToString();
+                code_first = row["PKGCODE"].ToString();
+            }
+                
+            if (toggle)
+            {
+                toggle_class = "line_toggle_2";
+            }
+            else
+            {
+                toggle_class = "line_toggle_1";
+            }
+             
+            <tr class="@toggle_class" align="center">
+            
+            <td><a href="javascript:autocomplete('@row["PKGNAME"]','@row["PKGCODE"]');">@row["PKGNAME"]</a></td>
+            <td><a href="javascript:autocomplete('@row["PKGNAME"]','@row["PKGCODE"]');">@row["PKGCODE"]</a></td>
+            
+            </tr>
+        }
+    </div>
+</table>
+<script type="text/javascript">
+    function autocomplete(r1, r2) {
+        parent.autocomplete_complete_package(r1, r2);
+    }
+
+    function autocomplete_first() {
+        autocomplete('@name_first', '@code_first');
+    }
+</script>
+</body>
+</html>

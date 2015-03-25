@@ -1,0 +1,144 @@
+﻿@using MvcPaging
+@model IList<Dictionary<string, object>>
+@{
+    ViewBag.Title = "LogManager";
+    Layout = "~/Views/Shared/Layout.cshtml";
+
+    if (ViewData["type"] == null || (string)ViewData["type"] == "")
+    {
+        ViewData["type"] = "all";
+    }
+}
+<link rel="stylesheet" href="~/Css/paging.css" type="text/css" />
+<link rel="stylesheet" href="~/Css/bootstrap.min.css" type="text/css" />
+<!--<link rel="stylesheet" href="~/Css/bootstrap-responsive.min.css" type="text/css" />-->
+<link rel="stylesheet" href="~/Css/icon-bootstrap.css" type="text/css" />
+
+<h2 class="h2">사용기록조회</h2>
+
+<script type="text/javascript" src="~/Script/datepicker.js">{"describedby":"fd-dp-aria-describedby"}</script>
+<link href="~/css/datepicker.css" rel="stylesheet" type="text/css" />
+
+<script type="text/javascript">
+    function fnViewType(type) {
+        location.href = "/Home/LogManager?type=" + type;
+    }
+</script>
+
+<form method="get" action="?">
+<table>
+<tr height="50">
+    <th align="right" style="padding-bottom:10px;">사용자 성명</th>
+    <td style="padding-left:10px; padding-right:20px;"><input type="text" name="LM_NAME" size="7" value="@ViewData["name"]" style="height:20px; width:100px;" /></td>
+    <th style="padding-bottom:10px; padding-right:10px;">소속기관</th>
+    <td style="padding-right:20px;"><input type="text" name="LM_OCCU" size="7" value="@ViewData["occu"]" style="height:20px; width:100px;" /></td>
+    <th style="padding-bottom:10px; padding-right:10px;">로그일시</th>
+    <td>
+        <input type="text" id="LM_DATE_BEGIN" name="LM_DATE_BEGIN" style="width:75px; text-align:center;" value="@ViewData["date_begin"]" />
+		<script type="text/javascript">
+		    var opts = { formElements: { "LM_DATE_BEGIN": "Y-ds-m-ds-d" } };
+		    datePickerController.createDatePicker(opts);
+        </script>
+        ~
+        <input type="text" id="LM_DATE_END" name="LM_DATE_END" style="width:75px; text-align:center;" value="@ViewData["date_end"]" />
+		<script type="text/javascript">
+		    var opts = { formElements: { "LM_DATE_END": "Y-ds-m-ds-d" } };
+		    datePickerController.createDatePicker(opts);
+        </script>
+    </td>
+    <td style="padding-left:20px; padding-bottom:10px;"><input type="submit" value="로그검색" /></td>
+</tr>
+<tr>
+    <th>ACTION 보기</th>
+    <td colspan="8">
+    <table cellspacing="0" cellpadding="3"><tr>
+    <td><input type="radio" name="view_catg" @if ((string)ViewData["type"] == "all")
+                                                {<text>checked</text> } value="all" onclick="fnViewType(this.value);" /></td>
+    <td>모두보기</td>
+    <td><input type="radio" name="view_catg" @if ((string)ViewData["type"] == "user")
+                                                {<text>checked</text> } value="user" onclick="fnViewType(this.value);" /></td>
+    <td>사용자관리내역</td>
+    <td><input type="radio" name="view_catg" @if ((string)ViewData["type"] == "logon")
+                                                {<text>checked</text> } value="logon" onclick="fnViewType(this.value);" /></td>
+    <td>로그인내역(로그인 실패 내역 포함)</td>
+    <td><input type="radio" name="view_catg" @if ((string)ViewData["type"] == "query")
+                                                {<text>checked</text> } value="query" onclick="fnViewType(this.value);" /></td>
+    <td>Query내역</td>
+    <td><input type="radio" name="view_catg" @if ((string)ViewData["type"] == "update")
+                                                {<text>checked</text> } value="update" onclick="fnViewType(this.value);" /></td>
+    <td>데이터 업데이트 내역</td>
+    </tr></table>
+    </td>
+</tr>
+</table>
+</form>
+
+<fieldset>
+<table cellspacing="0" cellpadding="0" border="0">
+    <tr class="line_toggle_1">
+        <th width="30">#</th>
+        <th width="160">기록일시</th>
+        <th width="140">ACTION</th>
+        <th width="100">사용자 ID</th>
+        <th width="80">사용자 성명</th>
+        <th width="140">소속기관</th>
+        <th width="400">로그내용</th>
+    </tr>
+@{
+    bool toggle = false;
+    string line_css = "line_toggle_2";
+    
+    foreach (Dictionary<string, object> d in Model)
+    {
+        if (toggle == true)
+        {
+            line_css = "line_toggle_1";
+        }
+        else
+        {
+            line_css = "line_toggle_2";
+        }
+
+    <tr class="@line_css" align="center">
+        <td>@d["LM_NO"]</td>
+        <td>@d["LM_DATE"]</td>
+        <td>@d["LM_ACTION"]</td>
+        <td>@d["LM_ID"]</td>
+        <td>@d["LM_NAME"]</td>
+        <td>@d["LM_OCCU"]</td>
+        <td style="width:400px; word-break:break-all; line-break:strict; text-align:left; font-size:11px;">@d["LM_LOG"]</td>
+    </tr>
+    
+        toggle = !toggle;
+    }
+    
+    if ((int)ViewData["TotalItemCount"] == 0)
+    {
+        <tr class="@line_css" align="center" height="70">
+            <td colspan="7">현재 표시할 항목이 없습니다</td>
+        </tr>
+    }
+}
+</table>
+
+<div style="width:1050px;">
+
+@Html.Raw(Html.Pager(
+      new Options
+      {
+          PageSize = (int)ViewData["PageSize"],
+          TotalItemCount = (int)ViewData["TotalItemCount"],
+          CurrentPage = (int)ViewData["PageNumber"],
+          ItemTexts = new ItemTexts() { Next = "Next", Previous = "Previous", Page = "" },
+          ItemIcon = new ItemIcon() { First = "icon-backward", Previous = "icon-chevron-left", Next = "icon-chevron-right", Last = "icon-forward" },
+          TooltipTitles = new TooltipTitles() { Next = "Next page", Previous = "Previous page", Page = "Go to page {0}.", First = "Go To First Page", Last = "Go To Last Page" },
+          Size = Size.normal,
+          Alignment = Alignment.centered,
+          IsShowControls = true,
+          IsShowFirstLast = true,
+          IsShowPages = true
+      }, new { type = ViewData["type"], LM_NAME = ViewData["name"], LM_OCCU = ViewData["occu"], LM_DATE_BEGIN = ViewData["date_begin"], LM_DATE_END = ViewData["date_end"] }))
+
+</div>
+    <!--@ViewData["sql"]-->
+</fieldset>

@@ -1,0 +1,228 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+
+namespace HealthWatchNET
+{
+    public class TestCodeManager
+    {
+        private class TestTableInfo
+        {
+            public string tst_cd;
+            public string tst_nm;
+            public string tablename;
+
+            public TestTableInfo(string cd, string nm, string tbl)
+            {
+                tst_cd = cd;
+                tst_nm = nm;
+                tablename = tbl;
+            }
+        }
+
+        Database db;
+        List<string> tst_cd_list;
+        Dictionary<string, string> code2table = new Dictionary<string, string>();
+
+        public static string[] GetCodeTable(Database db, string tst_cd)
+        {
+            List<string> tablename = new List<string>();
+
+            if (tst_cd == null) return null;
+
+            Table tbl = db.Table("CODE2TABLE");
+
+            if (tst_cd != null)
+            {
+                if (tst_cd.Substring(0, 2) == "R." || tst_cd.Substring(0, 2) == "P." || tst_cd.Substring(0, 3) == "I2." || tst_cd.Substring(0, 3) == "I3." || tst_cd.Substring(0, 3) == "I4.")
+                {
+                    return null;
+                }
+
+                Dictionary<string, object> row;
+                tbl.Select("TABLENAME", "TST_CD='" + tst_cd + "'");
+
+                while (tbl.FetchTo(out row) == true)
+                {
+                    tablename.Add(row["TABLENAME"].ToString());
+                }
+
+                if (tablename.Count == 0)
+                {
+                    List<TestTableInfo> names = FindCodeTable(db, tst_cd);
+                    foreach(TestTableInfo t in names) {
+                        // Codetable에 저장..
+                        tbl.rowinit();
+                        tbl.rowdata("TST_CD", t.tst_cd);
+                        tbl.rowdata("TST_NM", t.tst_nm);
+                        tbl.rowdata("TABLENAME", t.tablename);
+                        tbl.Insert(tbl.rowvalues(), tbl.rowfields());
+
+                        if (tablename.Contains(t.tablename) == false)
+                        {
+                            tablename.Add(t.tablename);
+                        }
+                    }
+                }
+            }
+
+            return tablename.ToArray();
+        }
+
+        private static List<TestTableInfo> FindCodeTable(Database db, string tmp_cd)
+        {
+            // TST_CD, TST_NM discovery in 3 tables
+            // for TST_CD finding speedup
+
+            List<TestTableInfo> ret = new List<TestTableInfo>();
+            Dictionary<string, object> row = null;
+
+            {
+                Table tbl = db.Table("HCSURE0T");
+                
+                tbl.Select("TST_CD, TST_NM", "TST_CD='" + tmp_cd + "'", "GROUP BY TST_CD, TST_NM");
+                while( tbl.FetchTo(out row) == true) {
+                    ret.Add(new TestTableInfo(row["TST_CD"].ToString(), row["TST_NM"].ToString(), "HCSURE0T"));
+                }
+            }
+            
+            {
+                Table tbl = db.Table("HCSUREST");
+                Table tbl2 = db.Table("HCSCODLT");
+                tbl.Select("EXAMCODE", "EXAMCODE='" + tmp_cd + "'", "GROUP BY EXAMCODE");
+                Dictionary<string, object> row_in = null;
+                while ( tbl.FetchTo(out row) == true) {
+                    tbl2.Select("CODENAME", "LCODE='" + row["EXAMCODE"].ToString() + "'", "GROPUP BY CODENAME");
+
+                    while (tbl2.FetchTo(out row_in) == true)
+                    {
+                        ret.Add(new TestTableInfo(row["EXAMCODE"].ToString(), row_in["CODENAME"].ToString(), "HCSUREST"));
+                    }
+                }
+            }
+
+            {
+                Table tbl = db.Table("HCSUXW0T");
+
+                tbl.Select("TST_CD, TST_SNM", "TST_CD='" + tmp_cd + "'", "GROUP BY TST_CD, TST_SNM");
+                while (tbl.FetchTo(out row) == true)
+                {
+                    ret.Add(new TestTableInfo(row["TST_CD"].ToString(), row["TST_SNM"].ToString(), "HCSUXW0T"));
+                }
+            }
+
+            return ret;
+        }
+
+        private static List<TestTableInfo> FindNameTable(Database db, string tmp_nm)
+        {
+            List<string> ret = new List<string>();
+
+            string tablename = "HCSURE0T";
+            Table tbl = db.Table(tablename);
+            if (tbl.SelectFetch("TST_CD", "TST_CD='" + tmp_cd + "'") != null) ret.Add(tablename);
+            tbl = null;
+
+            tablename = "HCSUREST";
+            tbl = db.Table(tablename);
+            if (tbl.SelectFetch("EXAMCODE", "EXAMCODE='" + tmp_cd + "'") != null) ret.Add(tablename);
+            tbl = null;
+
+            tablename = "HCSUXW0T";
+            tbl = db.Table(tablename);
+            if (tbl.SelectFetch("TST_CD", "TST_CD='" + tmp_cd + "'") != null) ret.Add(tablename);
+            tbl = null;
+
+            return ret;
+        }
+
+        public TestCodeManager(Database db, List<string> tst_cd_list)
+        {
+            this.db = db;
+            this.tst_cd_list = tst_cd_list;
+
+            Analyze();
+        }
+
+        public void Analyze()
+        {
+            Table tbl = db.Table("CODE2TABLE");
+            Dictionary<string, object> row;
+            string tst_cd = "'" + string.Join("', '", tst_cd_list) + "'";
+            int tst_cd_cnt = tst_cd_list.Count;
+
+            tbl.Select("TST_CD, TABLENAME", "TST_CD in (" + tst_cd + ")");
+            while (tbl.FetchTo(out row) == true)
+            {
+                code2table.Add(row["TST_CD"].ToString(), row["TABLENAME"].ToString());
+            }
+
+            // Code2Table에 없는 테스트 코드들은 새로 찾아서 다음에 쓸 수 있게 저장해 놓는다.
+            string tmp_cd = "";
+            string[] tablename = null;
+            for (int i = 0; i < tst_cd_list.Count; i++)
+            {
+                tmp_cd = tst_cd_list[i];
+                if (code2table.ContainsKey(tmp_cd) == false)
+                {
+                    tablename = FindCodeTable(db, tmp_cd).ToArray();
+                    foreach(string name in tablename)
+                    {
+                        code2table.Add(tmp_cd, name);
+
+                        // Codetable에 저장..
+                        tbl.rowinit();
+                        tbl.rowdata("TST_CD", tmp_cd);
+                        tbl.rowdata("TABLENAME", name);
+                        tbl.Insert(tbl.rowvalues(), tbl.rowfields());
+                    }
+                }
+            }
+        }
+
+        public string ToQuotedString(List<string> tst_cd_arr)
+        {
+            if (tst_cd_arr.Count > 0)
+                return "'" + String.Join("', '", tst_cd_arr.ToArray()) + "'";
+            else
+                return null;
+        }
+
+        public List<string> CodeRE0T()
+        {
+            List<string> ret = new List<string>();
+
+            for (int i = 0; i < tst_cd_list.Count; i++)
+            {
+                if (code2table.ContainsKey(tst_cd_list[i]) == true && code2table[tst_cd_list[i]] == "HCSURE0T") ret.Add(tst_cd_list[i]);
+            }
+
+            return ret;
+        }
+
+        public List<string> CodeREST()
+        {
+            List<string> ret = new List<string>();
+
+            for (int i = 0; i < tst_cd_list.Count; i++)
+            {
+                if (code2table.ContainsKey(tst_cd_list[i]) == true && code2table[tst_cd_list[i]] == "HCSUREST") ret.Add(tst_cd_list[i]);
+            }
+
+            return ret;
+        }
+
+        public List<string> CodeXW0T()
+        {
+            List<string> ret = new List<string>();
+
+            for (int i = 0; i < tst_cd_list.Count; i++)
+            {
+                if (code2table.ContainsKey(tst_cd_list[i]) == true && code2table[tst_cd_list[i]] == "HCSUXW0T") ret.Add(tst_cd_list[i]);
+            }
+
+            return ret;
+        }
+    }
+}

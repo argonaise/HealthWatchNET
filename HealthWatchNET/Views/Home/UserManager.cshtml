@@ -1,0 +1,378 @@
+﻿@model HealthWatchNET.Controllers.UserManagerModel
+@{
+    ViewBag.Title = "UserManager";
+    Layout = "~/Views/Shared/Layout.cshtml";
+}
+<script type="text/javascript" src="~/Script/datepicker.js"></script>
+<script type="text/javascript" src="~/Script/date.js"></script>
+<iframe id="hidden_proc" name="hidden_proc" style="width:300px; height:100px; display:none;"></iframe>
+
+<h2>사용자 관리</h2>
+
+<div>
+    <input type="button" style="width:110px; height:30px;" value="사용자 추가" onclick="fnAddUser()" />
+</div><br />
+
+<script type="text/javascript">
+    function fnAddUser() {
+        document.getElementById("userInfDiv").style.display = "block";
+    }
+
+    function fnCloseUser() {
+        document.getElementById("userInfDiv").style.display = "none";
+        location.href = "?";
+    }
+
+    function fnDupCheck() {
+        var id = document.getElementById("UM_ID").value;
+        if ( id == '' ) {
+            alert('ID를 입력하세요');
+            return;
+        }
+
+        if ( id.length < 4 || id.length > 12 ) {
+            alert('ID는 4~12자 이내에서 입력해 주세요');
+            return;
+        }
+
+        var match = id.match(/[a-zA-Z0-9]+/i);
+        
+        if( match != id) {
+            alert('ID는 영숫자로만 입력이 가능합니다');
+            return;
+        }
+
+        document.getElementById('hidden_proc').src = "/Home/IdDupCheck/?UM_ID=" + id;
+    }
+
+    function dupCheckOk(result) {
+        if ( result == true ) {
+            document.getElementById("id_dup_ok").value = "OK";
+        }
+        else {
+            document.getElementById("id_dup_ok").value = "";
+        }
+    }
+
+    function fnCheckForm() {
+        var form = document.forms["RegisterForm"];
+        @if ( Model.id == null ) {
+            <text>
+        if ( form.id_dup_ok.value == "" ) {
+            alert("ID 중복검사 버튼을 눌러 주세요");
+            return;
+        }
+            </text>
+        }
+
+        if ( form.UM_PW.value == "" ) {
+            alert("비밀번호를 입력해 주세요");
+            return;
+        }
+
+        if ( form.UM_PW.value.length < 6 ) {
+            alert("비밀번호는 6글자 이상 입력해 주세요");
+            return;
+        }
+
+        if ( form.UM_NAME.value == "" ) {
+            alert("사용자 성명을 입력해 주세요");
+            return;
+        }
+
+        if ( form.UM_OCCU.value == "" || form.UM_POS.value == "" ) {
+            alert("소속기관 및 직위를 입력해 주세요");
+            return;
+        }
+
+        // 외부연구원일 경우 사용기간이 반드시 입력되어야 함
+        if ( form.UM_TYPE.selectedIndex == 2 ) {
+            if ( form.UM_DATE_BEGIN.value == '' || form.UM_DATE_END.value == '' ) {
+                alert("외부연구원의 경우 사용시작일 및 사용만료일이 모두 입력되어야 합니다.");
+                return;
+            }
+        }
+
+        form.submit();
+        return true;
+    }
+
+    function fnDelUser(id) {
+        if ( confirm('사용자를 삭제하시겠습니까?') == true ) {
+            location.href = "/Home/PrcRemoveId/?UM_ID=" + id;
+        }
+    }
+</script>
+
+<div id="userInfDiv" style="background-color:white; border:4px solid #808080; padding:10px; width:520px; position:absolute; top:30%; left:50%; margin-left:-260px; display:none;">
+    <form name="RegisterForm" method="post" action="/Home/PrcUserCreate/?UM_ID=@Model.val("UM_ID")">
+    <h2 style="margin-top:0px;">@if ( Model.id == null ) { <text>사용자 추가</text> } else { <text>사용자 정보 수정</text> }</h2>
+    <table cellpadding="0" cellspacing="0" border="0">
+        <tr>
+            <th class="line_toggle_1" width="150">ID</th>
+            <td width="350" class="input_td_1">
+            @if ( Model.id == null ) {
+                <input type="hidden" id="id_dup_ok" name="id_dup_ok" value="" />
+                <input type="text" id="UM_ID" name="UM_ID" style="width:100px;" />
+                <input type="button" value="중복검사" onclick="fnDupCheck()" />
+            }
+            else {
+                <b>@Model.id</b>
+            }
+            </td>
+        </tr>
+        <tr>
+            <th class="line_toggle_1">Password</th>
+            <td class="input_td_1"><input type="text" name="UM_PW" style="width:100px;" value="@Model.val("UM_PW")" /> (6자 이상 입력)</td>
+        </tr>
+        <tr>
+            <th class="line_toggle_1">사용자 성명</th>
+            <td class="input_td_1"><input type="text" name="UM_NAME" style="width:100px;" value="@Model.val("UM_NAME")" /></td>
+        </tr>
+        <tr>
+            <th class="line_toggle_1">소속기관</th>
+            <td class="input_td_1"><input type="text" name="UM_OCCU" style="width:150px;" value="@Model.val("UM_OCCU")" /></td>
+        </tr>
+        <tr>
+            <th class="line_toggle_1">직위</th>
+            <td class="input_td_1"><input type="text" name="UM_POS" style="width:150px;" value="@Model.val("UM_POS")" /></td>
+        </tr>
+        <tr>
+            <th class="line_toggle_1">연락처</th>
+            <td class="input_td_1"><input type="text" name="UM_TEL" style="width:200px;" value="@Model.val("UM_TEL")" /></td>
+        </tr>
+        <tr>
+            <th class="line_toggle_1">권한타입</th>
+            <td class="input_td_1">
+                <select id="UM_TYPE" name="UM_TYPE" onchange="setExpireVisibility()">
+                    @{
+                        string[] sel = { "", "", "" };
+                        if ( Model.val("UM_TYPE") == "관리자" ) { sel[0] = "selected"; }
+                        if ( Model.val("UM_TYPE") == "내부직원" ) { sel[1] = "selected"; }
+                        if ( Model.val("UM_TYPE") == "외부연구원" ) { sel[2] = "selected"; }
+                    }
+                    <option value="관리자" @sel[0]>관리자</option>
+                    <option value="내부직원" @sel[1]>내부직원</option>
+                    <option value="외부연구원" @sel[2]>외부연구원</option>
+                </select>
+                <ul>
+                    <li>관리자 : 사용자 관리 및 로그 조회 가능</li>
+                    <li>내부직원 : 사용기간 제한 없음, 자료검색 항목 이용</li>
+                    <li>외부연구원 : 설정된 사용기간 동안 로그인 가능</li>
+                </ul>
+            </td>
+        </tr>
+        <tr>
+            <th class="line_toggle_1">사용기간</th>
+            <td class="input_td_1" style="line-height:200%;">
+                <div id="div_expire_date">
+                    <input type="text" id="UM_DATE_BEGIN" name="UM_DATE_BEGIN" style="width:75px; text-align:center;" value="@Model.val("UM_DATE_BEGIN")" />
+				    <script type="text/javascript"> var opts = { formElements: { "UM_DATE_BEGIN": "Y-ds-m-ds-d" } }; datePickerController.createDatePicker(opts); </script>
+                    <select id="UM_TIME_BEGIN_H" name="UM_TIME_BEGIN_H">
+                    @{
+                        string str;
+                        string val = Model.val("UM_TIME_BEGIN_H");
+                        for (int i = 1; i <= 23; i++)
+                        {
+                            str = i.ToString().PadLeft(2, '0');
+                            if ( str == val ) {
+                                <option value="@str" selected>@str</option>
+                            }
+                            else {
+                                <option value="@str">@str</option>
+                            }
+                        }
+                    }
+                    </select>
+                    :
+                    <select id="UM_TIME_BEGIN_M" name="UM_TIME_BEGIN_M">
+                    @{
+                        val = Model.val("UM_TIME_BEGIN_M");
+                        for (int i = 0; i <= 30; i+=30)
+                        {
+                            str = i.ToString().PadLeft(2, '0');
+                            if ( str == val ) {
+                                <option value="@str" selected>@str</option>
+                            }
+                            else {
+                                <option value="@str">@str</option>
+                            }
+                        }
+                    }
+                    </select>
+                    부터<br />
+                    <input type="text" id="UM_DATE_END" name="UM_DATE_END" style="width:75px; text-align:center;" value="@Model.val("UM_DATE_END")" />
+				    <script type="text/javascript"> var opts = { formElements: { "UM_DATE_END": "Y-ds-m-ds-d" } }; datePickerController.createDatePicker(opts); </script>
+                    <select id="UM_TIME_END_H" name="UM_TIME_END_H">
+                    @{
+                        val = Model.val("UM_TIME_END_H");
+                        for (int i = 1; i <= 23; i++)
+                        {
+                            str = i.ToString().PadLeft(2, '0');
+                            if ( str == val ) {
+                                <option value="@str" selected>@str</option>
+                            }
+                            else {
+                                <option value="@str">@str</option>
+                            }
+                        }
+                    }
+                    </select>
+                    :
+                    <select id="UM_TIME_END_M" name="UM_TIME_END_M">
+                    @{
+                        val = Model.val("UM_TIME_END_M");
+                        for (int i = 0; i <= 30; i += 30)
+                        {
+                            str = i.ToString().PadLeft(2, '0');
+                            if ( str == val ) {
+                                <option value="@str" selected>@str</option>
+                            }
+                            else {
+                                <option value="@str">@str</option>
+                            }
+                        }
+                    }
+                    </select>
+                    까지<br />
+                    빠른 설정 : 오늘로부터  
+                    <input type="button" value="1개월" onclick="setDate(1);" />
+                    <input type="button" value="3개월" onclick="setDate(3);" />
+                    <input type="button" value="6개월" onclick="setDate(6);" />
+                    <input type="button" value="1년" onclick="setDate(12);" />
+                </div>
+                <div id="div_internal" style="display:none;">권한 타입이 "외부연구원"일 때 사용기간 설정이 가능합니다.</div>
+            </td>
+        </tr>
+    </table><br />
+    <div align="center">
+        <input type="button" value="저장" style="width:100px; height:50px;" onclick="fnCheckForm()" />
+        <input type="button" value="닫기" style="width:100px; height:50px;" onclick="fnCloseUser()" />
+    </div>
+    </form>
+</div>
+
+<script type="text/javascript">
+    @if (Model.id != null)
+    {
+        <text>fnAddUser();</text>
+    }
+</script>
+
+<script type="text/javascript">
+    function setDate(months) {
+        var d = Date.today();
+        document.getElementById("UM_DATE_BEGIN").value = d.toString("yyyy-MM-dd");
+        document.getElementById("UM_TIME_BEGIN_H").selectedIndex = 8;
+        document.getElementById("UM_TIME_BEGIN_M").selectedIndex = 0;
+        d2 = d.addMonths(months).addDays(-1);
+        document.getElementById("UM_DATE_END").value = d2.toString("yyyy-MM-dd");
+        document.getElementById("UM_TIME_END_H").selectedIndex = 17;
+        document.getElementById("UM_TIME_END_M").selectedIndex = 0;
+    }
+
+    function setExpireVisibility() {
+        var obj = document.getElementById("UM_TYPE");
+        var val = obj[obj.selectedIndex].value;
+        var div1 = document.getElementById("div_expire_date");
+        var div2 = document.getElementById("div_internal");
+        if (val == "외부연구원") {
+            div1.style.display = "block";
+            div2.style.display = "none";
+        }
+        else {
+            div1.style.display = "none";
+            div2.style.display = "block";
+        }
+    }
+
+    setExpireVisibility();
+</script>
+
+<table cellspacing="0" cellpadding="0" border="0">
+    <tr class="line_toggle_1">
+        <th width="90">ID</th>
+        <th width="90">PW</th>
+        <th width="100">사용자 성명</th>
+        <th width="150">소속기관</th>
+        <th width="100">연락처</th>
+        <th width="100">직위</th>
+        <th width="100">권한타입</th>
+        <th width="150">관리</th>
+    </tr>
+@{
+    bool toggle = false;
+    string line_css;
+    foreach (Dictionary<string, object> d in Model.list)
+    {
+        if (toggle == true)
+        {
+            line_css = "line_toggle_1";
+        }
+        else
+        {
+            line_css = "line_toggle_2";
+        }
+        
+        <tr class="@line_css" align="center">
+            <td>@d["UM_ID"]</td>
+            <td>@d["UM_PW"]</td>
+            <td>@d["UM_NAME"]</td>
+            <td>@d["UM_OCCU"]</td>
+            <td>@d["UM_TEL"]</td>
+            <td>@d["UM_POS"]</td>
+            <td>@d["UM_TYPE"]</td>
+            <td>
+                <input type="button" value="EDIT" onclick="location.href='?UM_ID=@d["UM_ID"]'" />
+                <input type="button" value="DEL" onclick="fnDelUser('@d["UM_ID"]')" />
+            </td>
+        </tr>
+    
+        toggle = !toggle;
+    }
+}
+</table>
+
+<h2>암호화 도구</h2>
+
+<form method="post" id="decryptForm" action="/Home/PrcDecrypt" target="hidden_proc">
+<table>
+<tr align="center">
+    <td width="500"style="font-family:'Malgun Gothic'; color:#ff6a00; font-weight:bold;">AES 암호화 데이터</td>
+    <td width="500"style="font-family:'Malgun Gothic'; color:#ff6a00; font-weight:bold;">평문 데이터</td>
+</tr>
+<tr>
+    <td width="500"><textarea name="Cipher" rows="20" style="width:495px;"></textarea></td>
+    <td width="500"><textarea id="Decrypted" rows="20" style="width:495px;"></textarea></td>
+</tr>
+<tr>
+    <td style="padding-left:20px;">
+        <li>엑셀에서 암호화된 데이터가 들어있는 cell을 복사하여 붙여넣기하세요.</li>
+        <li>여러 line 및 cell을 붙여넣기 하셔서 한꺼번에 복호화할 수 있습니다.</li>
+    </td>
+    <td>
+        <input type="button" onclick="startDecrypt()" style="width:200px; height:40px;" value="평문으로 복호화" />
+        <div id="processing" style="display:none;">복호화 작업중입니다...</div>
+    </td>
+</tr>
+</table>
+
+</form><br />
+
+<script type="text/javascript">
+    function startDecrypt() {
+        var obj = document.getElementById("processing");
+        obj.style.display = "inline";
+
+        var form = document.getElementById("decryptForm");
+        form.submit();
+    }
+
+    function setDecrypted(str) {
+        var obj = document.getElementById("processing");
+        obj.style.display = "none";
+
+        var obj = document.getElementById("Decrypted");
+        obj.value = obj.value + "\n" + str;
+    }
+</script>

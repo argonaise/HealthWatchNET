@@ -1,0 +1,39 @@
+﻿@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/Layout.cshtml";
+}
+
+<table border="0" align="center" height="600">
+<tr><td valign="middle" align="center">
+
+@using (Html.BeginForm("PrcLogin", "Home", new { t = DateTime.Now.ToFileTime() }, FormMethod.Post, new { id = "id_loginform" } )) {
+<table cellspacing="0" cellpadding="0">
+<tr>
+    <td width="140" rowspan="2" style="padding-top:10px;" valign="top"><img src="~/Image/login_logo.jpg" border="0" /></td>
+    <td width="20"></td>
+    <td width="240" align="left" style="padding-top:8px;">
+	<table border="0">
+	<tr height="50">
+		<td width="50" class="h1" style="font-size:20pt;">ID</td>
+		<td valign="middle"><input type="text" name="id" value="" style="height:35px; width:200px; font-size:20pt; color: rgb(15, 23, 122);" onkeyup="if ( this.value.length == 12 ) id_pw.focus();"></td>
+	</tr>
+	<tr>
+		<td class="h1" style="font-size:20pt;">PW</td>
+		<td><input type="password" id="id_pw" name="pw" value="" style="height:35px; width:200px; font-size:20pt; color: rgb(15, 23, 122);" onkeyup="if ( event.keyCode == 10 ) id_loginform.submit()"></td>
+	</tr>
+    <!--
+	<tr>
+		<td class="h1" style="font-size:10pt;" colspan="2"><input type="checkbox" name="save_idpw"  /> ID/PW 저장</td>
+	</tr>
+    -->
+	<tr>
+		<td class="h1" colspan="2" align="right">
+		<input type="submit" value="로그인" style="width:200px; height:40px; margin-top:8px;" class="flatbutton" />
+		</td>
+	</tr>
+	</table>
+	
+	</td>
+</tr>
+</table>
+}

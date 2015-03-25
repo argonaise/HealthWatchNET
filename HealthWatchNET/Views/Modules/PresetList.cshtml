@@ -1,0 +1,62 @@
+﻿@model HealthWatchNET.Table
+@{
+    ViewBag.Title = "PresetList";
+    Layout = "~/Views/Modules/ModuleLayout.cshtml";
+}
+
+<script>
+    function clickall(toggle) {
+        var code_arr = document.getElementsByName("pset_name[]");
+
+        var cnt = 0;
+        for (var i = 0; i < code_arr.length; i++) {
+            code_arr[i].checked = toggle;
+        }
+    }
+
+    function unclickall() {
+        var code_arr = document.getElementsByName("pset_name[]");
+
+        var cnt = 0;
+        for (var i = 0; i < code_arr.length; i++) {
+            code_arr[i].checked = false;
+        }
+    }
+
+    function delCheckedPreset() {
+        if (confirm('선택된 항목을 삭제하시겠습니까?') == true) {
+            var obj = document.getElementById("checkform");
+            obj.action = "/Modules/DelPreset";
+            obj.submit();
+        }
+    }
+
+    function loadCheckedPreset() {
+        var obj = document.getElementById("checkform");
+        obj.action = "/Modules/UsePreset";
+        obj.submit();
+    }
+</script>
+
+<table cellpadding="0" cellspacing="0" border="0" width="99.5%" class="cell_table">
+<form id="checkform" method="post">
+<tr class="cell_tr">
+    <td class="cell_th" width="30">#</td>
+    <td class="cell_th" width="30"><input type="checkbox" onclick="clickall(this.checked)" /></td>
+    <td class="cell_th_rt">프리셋명</td>
+</tr>
+@{
+    Dictionary<string, object> ret = new Dictionary<string, object>();
+    int cnt = 0;
+}
+@while (Model.FetchTo(out ret) == true)
+{
+    cnt++;
+<tr class="cell_tr">
+    <td class="cell_td" width="30">@cnt</td>
+    <td class="cell_td" width="30"><input type="checkbox" name="pset_name[]" value="@ret["PSET_NAME"]" /></td>
+    <td class="cell_td"><a href="javascript:parent.loadPreset('@ret["PSET_NAME"]')">@ret["PSET_NAME"]</a></td>
+</tr>
+}
+</form>
+</table>

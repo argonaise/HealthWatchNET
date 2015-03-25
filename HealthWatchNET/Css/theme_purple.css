@@ -1,0 +1,118 @@
+img { border:0px; }
+body { margin: 0px; }
+h2 { font-weight:bold; font-family: Malgun gothic, Dotum, Calibri, Lucida Sans Unicode; font-size:18pt; color: rgb(15, 23, 122); }
+.h2 { font-weight:bold; font-family: Malgun gothic, Dotum, Calibri, Lucida Sans Unicode; font-size:18pt; color: rgb(15, 23, 122); }
+
+.flatbutton { padding:5px; border:1px soldi #C0C0C0; border-bottom:5px solid #C0C0C0; background-color:rgb(255, 139, 1); color:White; font-weight:bold; font-family: "Malgun gothic", "NanumGothic", "AppleGothic", "Dotum"; }
+
+.h1 { font-weight:bold; font-family: Malgun gothic, Dotum, Calibri, Lucida Sans Unicode; font-size:32pt; color: rgb(15, 23, 122); }
+
+.headline th { background-color:rgb(255, 139, 1); color:white; border-bottom: 6px solid rgb(201, 201, 201); height:36px; font-family: "Malgun gothic", "NanumGothic", "AppleGothic", "Dotum"; font-size:14px; }
+.headline th .menu_on { color:yellow; }
+.headline a { color:white; font-weight:bold; }
+.headline a:hover { color:yellow; font-weight:bold; }
+.headline td { color:white; font-weight:bold; }
+.search_highlight { color:red; }
+.completed { color:#40FF40; }
+.tooltip { font-size:12px; width: 500px; height: 30px; border:1px solid #eeeeee; padding:5px; border-radius: 5px; background-color: rgb( 255, 255, 153 ); }
+.update_data_log { font-size:11px; font-family:tahoma; border: 1px solid #c0c0c0; }
+.update_data_log td { font-size:11px; font-family:tahoma; border: 1px solid #c0c0c0; width:100px; word-break: break-all; }
+.list_gray { color:gray; }
+
+/* purple theme */
+.line_toggle_1_purple { background-color:rgb(123, 87, 167); }
+.line_toggle_2_purple { background-color:rgb(149, 121, 184); }
+a_purple { color:white; text-decoration:none; }
+a_purple:hover { color:yellow; font-weight:normal; }
+th_purple { font-size:12px; font-family: 맑은고딕, 돋움; font-weight:bold; color:white; height:35px; border-bottom:1px solid white; }
+td_purple { font-size:13px; font-family: 맑은고딕, 돋움; color:white; text-align:center; height:30px; }
+.completed_purple { color:#40FF40; }
+.menu_on_purple { color:yellow; }
+.star_purple { color:orange; }
+
+/* green theme */
+.line_toggle_1 { background-color:rgb(216, 218, 188); }
+.line_toggle_2 { background-color:rgb(235, 241, 222); }
+a { color:black; text-decoration:none; }
+a:hover { color:yellow; font-weight:normal; }
+th { font-size:12px; font-family: 맑은고딕, 돋움; font-weight:bold; color:black; height:35px; border-bottom:1px solid white; }
+td { font-size:13px; font-family: 맑은고딕, 돋움; color:black; height:30px; }
+.completed { color:#00A000; }
+.menu_on { color:blue; }
+.star { color:red; }
+
+/*
+.line_toggle_pre_head_1 { background-color:rgb(176, 178, 188); }
+.line_toggle_pre_head_1 th { color:blue; }
+.line_toggle_pre_2 { background-color:rgb(235, 241, 222); }
+*/
+
+.line_toggle_pre_head_1 { background-color:695D52; }
+.line_toggle_pre_head_1 th { color:white; }
+.line_toggle_pre_1 { background-color:EBE7DA; }
+.line_toggle_pre_1 td { color:black; font-weight:normal; }
+.line_toggle_pre_2 { background-color:C4CD61; }
+.line_toggle_pre_2 td { color:black; font-weight:normal; }
+
+.line_toggle_in_1 { background-color:rgb(196, 208, 208); }
+.line_toggle_in_2 { background-color:rgb(215, 221, 242); }
+
+.left_menu_table a {
+	font-family: "맑은 고딕", "나눔고딕", AppleGothic, "돋움"; font-size: 10pt; font-weight:bold; color: #909090;
+}
+.left_menu_table a:hover {
+	font-family: "맑은 고딕", "나눔고딕", AppleGothic, "돋움"; font-size: 10pt; font-weight:bold; color: orange;
+}
+.left_menu_table .cur {
+	font-family: "맑은 고딕", "나눔고딕", AppleGothic, "돋움"; font-size: 10pt; font-weight:bold; color: #4040C0;
+}
+.left_menu_table td {
+	font-family: "맑은 고딕", "나눔고딕", AppleGothic, "돋움"; font-size: 10pt; font-weight:bold; color: #B0B0B0;
+}
+.left_menu_table .title {
+	font-family: "맑은 고딕", "나눔고딕", AppleGothic, "돋움"; font-size: 14pt; font-weight:bold; color: #4A94D4; height:30px;
+}
+.left_menu_table .separator {
+	height:2px; background-color:#C0C0C0;
+}
+.left_menu_table .separator_margin {
+	height:10px;
+}
+
+.content_menu_table .title_td {
+	height:30px;
+}
+
+.content_menu_table .title {
+	font-family: "맑은 고딕", "나눔고딕", AppleGothic, "돋움"; font-size: 14pt; font-weight:bold; color: #4A94D4;
+}
+
+.content_menu_table .title_eng {
+	font-family: "Georgia"; font-size: 12pt; font-weight:normal; color: #909090; position:relative; top:1px;
+}
+
+.content_menu_table .separator {
+	height: 2px; background-image:url("image/sub_title_bar.png");
+}
+
+.t1 { table-layout: fixed; }
+.t1_top_left { background-repeat:no-repeat; background:url("image/border_stripe.png") 0px 0px; width: 15px; height: 15px; overflow:hidden; table-layout: fixed; }
+.t1_top_middle { background-repeat:no-repeat; background:url("image/border_top.png"); height: 15px; }	
+.t1_top_middle_split { background-repeat:no-repeat; background:url("image/border_stripe.png") -31px 0px; width: 5px; height: 15px; overflow:hidden; table-layout: fixed; }	
+.t1_top_right { background-repeat:no-repeat; background:url("image/border_stripe.png") -36px 0px; width: 21px; height: 15px; overflow:hidden; }	
+.t1_middle_left { background-repeat:no-repeat; background:url("image/border_left.png"); width: 15px; }
+.t1_middle_split { background-repeat:no-repeat; background:url("image/border_split.png"); width: 5px; }
+.t1_middle_right { background-repeat:no-repeat; background:url("image/border_right.png"); width: 21px; }
+.t1_bottom_left { background-repeat:no-repeat; background:url("image/border_stripe.png") 0px -28px; width: 15px; height: 19px; overflow:hidden; table-layout: fixed; }	
+.t1_bottom_middle { background-repeat:no-repeat; background:url("image/border_bottom.png"); height: 19px;  }
+.t1_bottom_middle_split { background-repeat:no-repeat; background:url("image/border_stripe.png") -31px -28px; width: 5px; height: 19px; overflow:hidden; table-layout: fixed; }	
+.t1_bottom_right { background-repeat:no-repeat; background:url("image/border_stripe.png") -36px -28px; width: 21px; height: 19px; overflow:hidden; table-layout: fixed; }
+.t1_content { padding-left:5px; padding-right:15px; height:100% }
+
+.t1_inner_title { font-size: 20pt; font-family:"나눔고딕", "맑은 고딕", AppleGothic, "돋움"; font-weight:bold; color:#404040; }
+
+.staff_splitter { color:#c0c0c0; margin-top:20px; margin-bottom:20px; }
+
+.input_td_1 {
+    padding-left: 10px;
+}

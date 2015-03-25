@@ -1,0 +1,652 @@
+﻿@model List<HealthWatchNET.Controllers.StoredPreset>
+@{
+    ViewBag.Title = "TestSearch";
+    Layout = "~/Views/Shared/Layout.cshtml";
+}
+<script type="text/javascript" src="~/Script/jquery-1.7.min.js"></script>
+<script type="text/javascript" src="~/Script/jquery.event.drag-2.2.js"></script>
+<script type="text/javascript" src="~/Script/jquery.jsonp-1.1.0.min.js"></script>
+
+<script type="text/javascript" src="~/Script/RemoteModel/slick.testpackage.js"></script>
+<script type="text/javascript" src="~/Script/RemoteModel/slick.testpackageitem.js"></script>
+<script type="text/javascript" src="~/Script/slick.core.js"></script>
+<script type="text/javascript" src="~/Script/slick.grid.js"></script>
+<script type="text/javascript" src="~/Script/slick.checkboxselectcolumn.js"></script>
+<script type="text/javascript" src="~/Script/slick.cellselectionmodel.js"></script>
+<script type="text/javascript" src="~/Script/slick.cellrangedecorator.js"></script>
+<script type="text/javascript" src="~/Script/slick.cellrangeselector.js"></script>
+<script type="text/javascript" src="~/Script/slick.rowselectionmodel.js"></script>
+<script type="text/javascript" src="~/Script/slick.columnpicker.js"></script>
+
+<script type="text/javascript" src="~/Script/datepicker.js">{"describedby":"fd-dp-aria-describedby"}</script>
+<link href="~/css/datepicker.css" rel="stylesheet" type="text/css" />
+
+<style>
+    .slickgrid { text-align:left; }
+    
+    .cell-story {
+        white-space: normal !important;
+        line-height: 19px !important;
+    }
+
+    .loading-indicator {
+        display: inline-block;
+        padding: 12px;
+        background: white;
+        -opacity: 0.5;
+        color: black;
+        font-weight: bold;
+        z-index: 9999;
+        border: 1px solid red;
+        -moz-border-radius: 10px;
+        -webkit-border-radius: 10px;
+        -moz-box-shadow: 0 0 5px red;
+        -webkit-box-shadow: 0px 0px 5px red;
+        -text-shadow: 1px 1px 1px white;
+    }
+
+    .loading-indicator label {
+        padding-left: 20px;
+        font-family: "Malgun gothic", "NanumGothic", "AppleGothic", "Dotum";
+        font-size: 14px;
+        font-weight: bold;
+        background: url('~/Images/site/ajax-loader-small.gif') no-repeat center left;
+    }
+    
+    .slick-highlighted
+    {
+        background: #EEEEAA;
+    }
+    
+    .slick-viewport {
+       overflow-x: hidden !important;
+    }
+    
+    .slick-cell-checkboxsel {
+      background: #f0f0f0;
+      text-align: center;
+      border-right-color: silver;
+      border-right-style: solid;
+    }
+</style>
+
+<div id="autocomplete" style="position:absolute; top:0px; left:0px; width:700px; height:300px; display:none;">
+<iframe id="autocomplete_iframe" style="width:100%; height:100%"></iframe>
+</div>
+
+<h2>Step 1. 검사항목 선택</h2>
+<ul style="line-height:150%">
+    <li>"프리셋 만들기" 기능을 이용하여 검사 항목 그룹을 만드세요.</li>
+    <li>"프리셋명"을 선택하셔서 오른쪽에 조회할 검사 항목을 확인하세요.</li>
+    <li>프리셋을 이용한 검사 항목 추가 후 하단에 조건을 입력하세요.</li>
+</ul>
+
+<table width="700" border="0">
+<tr align="center">
+    <th width="300">
+        Preset List
+    </th>
+    <th width="400">
+        Test Item List
+    </th>
+</tr>
+<tr>
+    <td valign="top">
+        <div id="presetGrid" class="slickgrid" style="width:350px; height:240px; border:1px solid #C0C0C0;"></div>
+        <table><tr>
+        <td><input type="button" value="새로운 프리셋 만들기" onclick="location.href='/Home/TestPresetMake'" style="width:200px; height:50px; margin-top:5px; color:Blue; font-weight:bold;" /></td>
+        <td><input type="button" value="프리셋 삭제" onclick="DeletePreset()" style="width:150px; height:50px; margin-top:5px; color:#808080; font-weight:bold;" /></td>
+        </tr></table>
+    </td>
+    <td><div id="testGrid" class="slickgrid" style="width:350px; height:300px; border:1px solid #C0C0C0;"></div></td>
+    <td valign="top"><input id="preset_edit_btn" type="button" value="프리셋 수정" onclick="EditPreset()" style="width:200px; height:50px; margin-top:5px; color:Blue; font-weight:bold; display:none;" /></td>
+</tr>
+</table>
+
+<h2>Step 2. 검색조건 선택</h2>
+
+<div style="width:600px; height:300px; display:none;">
+<iframe id="proc_iframe" name="proc_iframe" style="width:100%; height:100%"></iframe>
+</div>
+
+<form method="post" action="/Home/QueryMake" target="proc_iframe">
+<input type="hidden" id="selected_sp_no" name="selected_sp_no" />
+<table width="900" cellpadding="6" cellspacing="0" border="0">
+
+<tr>
+    <th width="100" bgcolor="#dddddd">환자 성명</th>
+    <td width="23"><input type="checkbox" name="sw_name" /></td>
+    <td>
+        <select name="p_name_op">
+            <option value="equal">정확히 일치</option>
+            <option value="include">일부 포함</option>
+        </select>
+        <input type="text" name="p_name" />
+    </td>
+</tr>
+
+<tr>
+    <th bgcolor="#dddddd">환자 연령</th>
+    <td><input type="checkbox" name="sw_age" /></td>
+    <td>
+        <select name="p_age_op_1">
+            <option value="gt">&gt;</option>
+            <option value="gteq">&gt;=</option>
+            <option value="eq">=</option>
+            <option value="lteq">&lt;=</option>
+            <option value="lt">&lt;</option>
+        </select>
+        <input type="text" name="p_age_1" size="4" /> (숫자로 입력)
+
+        <select name="p_age_between">
+            <option value="">----</option>
+            <option value="and">and</option>
+            <option value="or">or</option>
+        </select>
+
+        <select name="p_age_op_2">
+            <option value="">----</option>
+            <option value="lt">&lt;</option>
+            <option value="lteq">&lt;=</option>
+            <option value="eq">=</option>
+            <option value="gteq">&gt;=</option>
+            <option value="gt">&gt;</option>
+        </select>
+        <input type="text" name="p_age_2" size="4" />
+    </td>
+</tr>
+
+<tr>
+    <th bgcolor="#dddddd">환자 성별</th>
+    <td><input type="checkbox" name="sw_sex" /></td>
+    <td>
+        <select name="p_sex">
+            <option value="">----</option>
+            <option value="M">남자</option>
+            <option value="F">여자</option>
+        </select>
+    </td>
+</tr>
+
+<tr>
+    <th bgcolor="#dddddd">환자 번호</th>
+    <td><input type="checkbox" name="sw_patno" /></td>
+    <td style="line-height:150%; color:Olive;">
+        <li>1행에 환자번호 1건이 들어가도록 입력해 주세요.</li>
+        <li>Excel에서 환자번호 행을 복사하셔서 그대로 붙여 넣으시면 됩니다.</li>
+        <li>(행 제목은 제외하고 데이터만 복사)</li><br />
+        <textarea name="p_patno_arr" cols="60" rows="5"></textarea>
+    </td>
+</tr>
+
+<tr>
+    <th width="100" bgcolor="#dddddd">예약번호</th>
+    <td><input type="checkbox" name="sw_rsvno" /></td>
+    <td>
+        <select name="p_rsvno_op">
+            <option value="equal">정확히 일치</option>
+            <option value="include">일부 포함</option>
+        </select>
+        <input type="text" name="p_rsvno" />
+    </td>
+</tr>
+
+<tr>
+    <th bgcolor="#dddddd">수진일자</th>
+    <td><input type="checkbox" name="sw_date" /></td>
+    <td style="line-height:170%;">
+        수진일
+        <input type="text" id="p_date_1" name="p_date_1" style="width:75px; text-align:center;" />
+		<script type="text/javascript">
+            var opts = { formElements: { "p_date_1": "Y-ds-m-ds-d"} };
+		    datePickerController.createDatePicker(opts);
+        </script>
+
+        <select name="p_date_op_1">
+            <option value="">----</option>
+            <option value="gt">이후</option>
+            <option value="lt">이전</option>
+        </select>
+
+        <select name="p_date_between">
+            <option value="">----</option>
+            <option value="and">and</option>
+        </select>
+        &nbsp;&nbsp;&nbsp;
+
+        수진일
+        <input type="text" id="p_date_2" name="p_date_2" style="width:75px; text-align:center;" />
+		<script type="text/javascript">
+		    var opts = { formElements: { "p_date_2": "Y-ds-m-ds-d"} };
+		    datePickerController.createDatePicker(opts);
+        </script>
+
+        <select name="p_date_op_2">
+            <option value="">----</option>
+            <option value="gt">이후</option>
+            <option value="lt">이전</option>
+        </select>
+        <br />
+        <font color="olive"><b>예</b> : 2005-10-05, 수진일 이후/이전 지정시 해당 수진일자 자료 포함</font>
+    </td>
+</tr>
+
+<tr>
+    <th width="100" bgcolor="#dddddd">Package</th>
+    <td><input type="checkbox" name="sw_pkg" /></td>
+    <td style="line-height:170%;">
+        패키지명 :
+        <input type="text" id="ac_pkg_name" size="30" name="p_pkg_name" onkeyup="if ( validKeyCode(event.keyCode ) ) autocomplete_package(this)" />
+        &nbsp;&nbsp;&nbsp;
+
+        패키지코드 :
+        <input type="text" id="ac_pkg_cd" size="10" name="p_pkg_cd" onkeyup="if ( validKeyCode(event.keyCode ) ) autocomplete_package(this)" />
+        <br />
+        <font color="olive"><b>자동완성기능 지원</b> : 패키지명 혹은 패키지코드 일부를 입력 후 나타난 목록에서 선택합니다</font>
+    </td>
+</tr>
+
+<tr>
+    <th width="100" bgcolor="#dddddd">검사1</th>
+    <td><input type="checkbox" name="sw_test1" /></td>
+    <td style="line-height:170%;">
+        검사명 :
+        <input type="text" size="30" id="ac_test1_name" name="p_test1_name" onkeyup="if ( validKeyCode(event.keyCode ) ) autocomplete_testlist('test1',this)" />
+        &nbsp;&nbsp;&nbsp;
+
+        검사코드 :
+        <input type="text" size="10" id="ac_test1_cd" name="p_test1_cd" onkeyup="if ( validKeyCode(event.keyCode ) ) autocomplete_testlist('test1',this)" /><br />
+
+        <font color="olive"><b>자동완성기능 지원</b> : 검사명 혹은 검사코드 일부를 입력 후 나타난 목록에서 선택합니다</font><br />
+        
+        검사결과 :
+        <input type="radio" name="p_test1_val_op" value="NOT NULL" checked="checked" /> NOT NULL
+        <input type="radio" name="p_test1_val_op" value="NULL" /> NULL<br />
+        <div style="padding-left:60px;">
+        <input type="radio" name="p_test1_val_op" value="EXACT" /> 정확히 일치
+            <input type="text" name="p_test1_val_exact" size="20" />
+            <input type="radio" name="p_test1_val_op" value="LIKE" /> 일부 포함
+            <input type="text" name="p_test1_val_like" size="20" />
+        <br />
+            <!--<div style="padding-left:8px; color:olive;"><b>* 다중 검색어 지원</b> : [Keyword1 또는 Keyword2]로 찾기 입력 예 → Keyword1, Keyword2</div>-->
+        </div>
+    </td>
+</tr>
+
+<tr>
+    <th width="100" bgcolor="#dddddd">검사2</th>
+    <td><input type="checkbox" name="sw_test2" /></td>
+    <td style="line-height:170%;">
+        검사명 :
+        <input type="text" size="30" id="ac_test2_name" name="p_test2_name" onkeyup="if ( validKeyCode(event.keyCode ) ) autocomplete_testlist('test2',this)" />
+        &nbsp;&nbsp;&nbsp;
+
+        검사코드 :
+        <input type="text" size="10" id="ac_test2_cd" name="p_test2_cd" onkeyup="if ( validKeyCode(event.keyCode ) ) autocomplete_testlist('test2',this)" /><br />
+
+        <font color="olive"><b>자동완성기능 지원</b> : 검사명 혹은 검사코드 일부를 입력 후 나타난 목록에서 선택합니다</font><br />
+        
+        검사결과 : <input type="radio" name="p_test2_val_op" value="NOT NULL" checked="checked" /> NOT NULL
+        <input type="radio" name="p_test2_val_op" value="NULL" /> NULL<br />
+        <div style="padding-left:60px;">
+            <input type="radio" name="p_test2_val_op" value="EXACT" /> 정확히 일치
+            <input type="text" name="p_test2_val_exact" size="20" />
+            <input type="radio" name="p_test2_val_op" value="LIKE" /> 일부 포함
+            <input type="text" name="p_test2_val_like" size="20" />
+        <br />
+            <!--<div style="padding-left:8px; color:olive;"><b>* 다중 검색어 지원</b> : [Keyword1 또는 Keyword2]로 찾기 입력 예 → Keyword1, Keyword2</div>-->
+        </div>
+        <br />
+        <div style="background-color: #e0e0e0; padding-left:10px; width:540px; color:olive;"><b>검사 1 - 검사 2 관계</b> : <input type="radio" name="p_test_rel" value="AND" checked /> AND <input type="radio" name="p_test_rel" value="OR" /> OR</div>
+    </td>
+</tr>
+<tr>
+    <td colspan="3" align="center"><input type="submit" value="검색조건 적용" style="width:200px; height:50px; margin-top:20px;" /></td>
+</tr>
+
+</table>
+</form>
+
+<script type="text/javascript">
+
+    function autocomplete_package(event_obj) {
+        var pkg_cd = document.getElementById("ac_pkg_cd");
+        var pkg_name = document.getElementById("ac_pkg_name");
+
+        if (trim(pkg_cd.value).length > 0 || trim(pkg_name.value).length > 0) {
+            var pos = getOffset(event_obj);
+
+            var div = document.getElementById("autocomplete");
+            div.style.top = pos.top + 30 + 'px';
+            div.style.left = pos.left + 'px';
+            div.style.display = "block";
+
+            var iframe = document.getElementById("autocomplete_iframe");
+            iframe.src = "/Data/AutoCompletePackageList?pkg_cd=" + encodeURIComponent(pkg_cd.value) + "&pkg_name=" + encodeURIComponent(pkg_name.value);
+        }
+    }
+
+    function autocomplete_testlist(selector, event_obj) {
+        var test_cd = document.getElementById("ac_" + selector + "_cd");
+        var test_name = document.getElementById("ac_" + selector + "_name");
+
+        if (trim(test_cd.value).length > 0 || trim(test_name.value).length > 0) {
+            var pos = getOffset(event_obj);
+
+            var div = document.getElementById("autocomplete");
+            div.style.top = pos.top + 30 + 'px';
+            div.style.left = pos.left + 'px';
+            div.style.display = "block";
+
+            var iframe = document.getElementById("autocomplete_iframe");
+            iframe.src = "/Data/AutoCompleteTestList?selector=" + selector + "&test_cd=" + encodeURIComponent(test_cd.value) + "&test_name=" + encodeURIComponent(test_name.value);
+        }
+    }
+
+    function getOffset(el) {
+        var _x = 0;
+        var _y = 0;
+        while (el && !isNaN(el.offsetLeft) && !isNaN(el.offsetTop)) {
+            _x += el.offsetLeft - el.scrollLeft;
+            //_y += el.offsetTop - el.scrollTop;
+            _y += el.offsetTop;
+            el = el.offsetParent;
+        }
+        return { top: _y, left: _x };
+    }
+
+    function trim(str) {
+        return str.replace(/^\s\s*/, '').replace(/\s\s*$/, '');
+    }
+
+    function autocomplete_abort() {
+        var div = document.getElementById("autocomplete");
+        div.style.top = "0px";
+        div.style.left = "0px";
+        div.style.display = "none";
+    }
+
+    function autocomplete_complete_package(name, code) {
+        document.getElementById("ac_pkg_name").value = name;
+        document.getElementById("ac_pkg_cd").value = code;
+
+        autocomplete_abort();
+    }
+
+    function autocomplete_complete_testlist(selector, r1, r2) {
+        document.getElementById("ac_" + selector + "_name").value = r1;
+        document.getElementById("ac_" + selector + "_cd").value = r2;
+
+        autocomplete_abort();
+    }
+
+    function autocomplete_first() {
+        var obj = document.getElementById("autocomplete_iframe");
+        var objDoc = obj.contentWindow || obj.contentDocument;
+        objDoc.autocomplete_first();
+    }
+
+    function validKeyCode(keyCode) {
+        switch (keyCode) {
+            //case 8: // backspace 
+            case 16: // shift
+            case 17: // ctrl
+            case 18: // alt
+            case 20: // caps lock
+            case 35: // end
+            case 36: // home
+            case 37: // left
+            case 38: // up
+            case 39: // right
+            case 40: // down
+            case 45: // insert
+            case 46: // delete
+                return false;
+                break;
+            case 9: // tab
+                autocomplete_abort();
+                return false;
+                break;
+            case 13: // enter
+                autocomplete_first();
+                return false;
+            default:
+                return true;
+        }
+    }
+
+    function autocomplete_query(event_obj) {
+        var pos = getOffset(event_obj);
+
+        var div = document.getElementById("autocomplete");
+        div.style.top = pos.top + 30 + 'px';
+        div.style.left = pos.left + 'px';
+        div.style.display = "block";
+
+        var iframe = document.getElementById("autocomplete_iframe");
+        iframe.src = "/Data/AutoCompleteQuery";
+    }
+
+    function autocomplete_complete_query(desc, query) {
+        document.getElementById("query_desc").value = desc;
+        document.getElementById("query").value = query;
+
+        autocomplete_abort();
+    }
+
+</script>
+
+<form name="ExecForm" method="post" action="@Url.Action("QueryExec", "Home")" target="_blank">
+<input type="hidden" id="sp_no_exec" name="sp_no_exec" />
+<h2>Step 3. Query 확인 및 실행 <input type="button" value="Query History" onclick="autocomplete_query(this);" /></h2>
+<table width="700" border="0">
+<tr>
+    <td valign="top">
+        <textarea rows="3" cols="80" id="query_desc" name="query_desc" style="background-color:#e0e0e0;"></textarea><br />
+        <textarea rows="10" cols="80" id="query" name="query"></textarea><br />
+        <table>
+            <tr>
+            <td><b>테스트 받기(HTML)</b></td>
+            <td>
+            <input type="radio" name="export_rows" value="100" checked="checked" /> 100건
+            <input type="radio" name="export_rows" value="500" /> 500건
+            <input type="radio" name="export_rows" value="1000" /> 1000건</td>
+            <td width="20">&nbsp;</td>
+            <td><b>전체 데이터 받기(CSV)</b></td>
+            <td><input type="radio" name="export_rows" value="" />전체 데이터</td>
+            </tr>
+        </table>
+    </td>
+    <td valign="top"><input type="submit" value="QUERY 실행" style="width:100px; height:209px;" /></td>
+</tr>
+</table>
+</form>
+
+
+<script type="text/javascript">
+
+    var edit_preset_no = "";
+
+    function PutExecScript( str, preset_no ) {
+        document.getElementById("query").value = str;
+        document.getElementById("sp_no_exec").value = preset_no;
+    }
+
+    function PutExecString(str) {
+        document.getElementById("query_desc").value = str;
+    }
+
+    function EditPreset() {
+        if ( edit_preset_no == "" ) {
+            alert("프리셋을 선택하세요");
+            return;
+        }
+
+        location.href = "/Home/TestPresetMake/?SP_NO=" + edit_preset_no;
+    }
+
+    function DeletePreset() {
+        selectedIndexes = pset_grid.getSelectedRows();
+
+        var str = '';
+        jQuery.each(selectedIndexes, function (idx, val) {
+            str += pset_grid.getDataItem(val).SP_NO + ";";
+            //alert( pset_grid.getDataItem(val).SP_NO );
+            //alert(s.options.length);
+            //alert(test_grid.getDataItem(idx).TST_CD);
+        });
+        //alert(str);
+        if ( confirm( '선택한 프리셋을 삭제하시겠습니까?' ) ) {
+            location.href = "/Data/PrcDelPreset?SP_NO=" + str;
+        }
+    }
+
+    var pset_grid;
+    //var pset_loader = new Slick.Data.RemoteModelPackage();
+
+    var psetNameFormatter = function (row, cell, value, columnDef, dataContext) {
+        return "<a href=\"javascript:parent.viewPset('" + dataContext["SP_NO"] + "', '" + dataContext["index"] + "');\" onfocus=\"blur();\">" + dataContext["PSET_NAME"] + "</a>";
+    };
+
+    var checkboxSelector = new Slick.CheckboxSelectColumn( { id: "CHECK", field:"SP_NO", width:30, cssClass: "slick-cell-checkboxsel" } );
+
+    var pset_columns = [
+        checkboxSelector.getColumnDefinition(),
+        { id: "CNT", name: "#", field: "CNT", width: 50, sortable: false, cssClass: "slick-center", headerCssClass: "slick-center" },
+        { id: "PSET_NAME", name: "프리셋명", field: "PSET_NAME", width: 200, sortable: false, cssClass: "slick-center", headerCssClass: "slick-center", formatter: psetNameFormatter },
+        { id: "PSET_COUNT", name: "항목수", field: "PSET_COUNT", width: 70, sortable: false, cssClass: "slick-center", headerCssClass: "slick-center" }
+    ];
+
+    var pset_options = {
+        rowHeight: 30,
+        editable: false,
+        enableAddRow: false,
+        enableColumnReorder: false,
+        enableCellNavigation: false
+    };
+
+    var pset_loadingIndicator = null;
+
+    var pset_data = [];
+    @{
+        int cnt = 0;
+
+        foreach( HealthWatchNET.Controllers.StoredPreset sp in Model )
+        {
+            @Html.Raw("pset_data[" + cnt + "] = {CNT: " + (cnt + 1) + ", SP_NO: " + @sp.SP_NO + ", PSET_NAME: '" + @sp.PSET_NAME + "', PSET_COUNT: " + @sp.TST_CD_COUNT + "};\n");
+            cnt++;
+        }
+    }
+
+    //----------------------------------------------------------------------------------------------------------------------------------------------
+
+    var test_grid;
+    var test_loader = new Slick.Data.RemoteModelPackageItem();
+
+    var testCheckFormatter = function (row, cell, value, columnDef, dataContext) {
+        return "<input type=\"checkbox\" name=\"testItemCheck\" value=\"" + dataContext["TST_CD"] + "^^" + dataContext["TST_NAME"] + "\" />";
+    };
+
+    var test_columns = [
+        { id: "TST_CD", name: "검사코드", field: "TST_CD", width: 90, sortable: false, headerCssClass: "slick-center", cssClass: "slick-center" },
+        { id: "TST_NAME", name: "검사명", field: "TST_NAME", width: 260, sortable: false, headerCssClass: "slick-center", cssClass: "slick-center" }
+    ];
+
+    var test_options = {
+        rowHeight: 30,
+        editable: false,
+        enableAddRow: false,
+        enableColumnReorder: false,
+        enableCellNavigation: false
+    };
+
+    var test_loadingIndicator = null;
+
+    function toggleCheck() {
+        alert(document.getElementsByName("testItemCheck").length);
+    }
+
+
+    //----------------------------------------------------------------------------------------------------------------------------------------------
+
+    $(function () {
+        pset_grid = new Slick.Grid("#presetGrid", pset_data, pset_columns, pset_options);
+        pset_grid.setSelectionModel(new Slick.RowSelectionModel({ selectActiveRow: false }));
+        pset_grid.registerPlugin(checkboxSelector);
+
+        var columnpicker = new Slick.Controls.ColumnPicker(pset_columns, pset_grid, pset_options);
+
+        //----------------------------------------------------------------------------------------------------------------------------------------------
+
+        test_grid = new Slick.Grid("#testGrid", test_loader.data, test_columns, test_options);
+
+        test_grid.onViewportChanged.subscribe(function (e, args) {
+            var vp = test_grid.getViewport();
+            test_loader.ensureData(vp.top, vp.bottom);
+        });
+
+        test_grid.onSort.subscribe(function (e, args) {
+            test_loader.setSort(args.sortCol.field, args.sortAsc ? 1 : -1);
+            var vp = test_grid.getViewport();
+            test_loader.ensureData(vp.top, vp.bottom);
+        });
+
+        test_loader.onDataLoading.subscribe(function () {
+            if (!test_loadingIndicator) {
+                test_loadingIndicator = $("<span class='loading-indicator'><label><img src=\"/Image/site/ajax-loader-small.gif\" /> 데이터 읽는중...</label></span>").appendTo(document.body);
+                var $g = $("#testGrid");
+                //alert($g.position().top);
+
+                test_loadingIndicator
+                .css("position", "absolute")
+                .css("top", $g.position().top + $g.height() / 2 - test_loadingIndicator.height() / 2)
+                .css("left", $g.position().left + $g.width() / 2 - test_loadingIndicator.width() / 2);
+            }
+
+            test_loadingIndicator.show();
+        });
+
+        test_loader.onDataLoaded.subscribe(function (e, args) {
+            for (var i = args.from; i <= args.to; i++) {
+                test_grid.invalidateRow(i);
+            }
+
+            test_grid.updateRowCount();
+            test_grid.render();
+
+            test_loadingIndicator.fadeOut();
+        });
+
+        $("#testSearch").keyup(function (e) {
+            if (e.which == 13) {
+                test_loader.setItemSearch(encodeURIComponent($(this).val()));
+                var vp = test_grid.getViewport();
+                test_loader.ensureData(vp.top, vp.bottom);
+            }
+        });
+
+        // load the first page
+        pset_grid.onViewportChanged.notify();
+        //test_grid.onViewportChanged.notify();
+    })
+
+    function viewPset(sp_no, index) {
+        var hash = {};
+        index = index - 1;
+        hash[index] = { "CHECK": "slick-highlighted", "CNT": "slick-highlighted", "PSET_NAME": "slick-highlighted", "PSET_COUNT": "slick-highlighted" };
+        pset_grid.setCellCssStyles("slick-highlighted", hash);
+
+        //alert(sp_no);
+        $("#selected_sp_no").val(sp_no);
+        $("#sp_no_exec").val(sp_no);
+        //alert(document.getElementById("selected_sp_no").value);
+
+        test_loader.setPresetSearch(sp_no);
+        var vp = test_grid.getViewport();
+        test_loader.ensureData(vp.top, vp.bottom);
+
+        edit_preset_no = sp_no;
+        document.getElementById("preset_edit_btn").style.display = "block";
+    }
+
+</script>

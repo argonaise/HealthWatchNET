@@ -1,0 +1,26 @@
+﻿@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>ModuleLayout</title>
+</head>
+<body style="margin:0px;">
+<style>
+    .cell_table { border-collapse: collapse; background-color:#eeeeee; font-family:"Malgun gothic", "Dotum"; font-size:9pt; }
+    .cell_th { background-color:#eeeeee; padding:0px; border-bottom: 1px dotted #606060; }
+    .cell_th_rt { background-color:#eeeeee; padding:0px; border-bottom: 1px dotted #606060; border-right: 1px dotted #606060; }
+    .cell_td { background-color:White; padding:0px; border-bottom: 1px dotted #606060; border-right: 1px dotted #606060; }
+    .cell_tr { text-align:center; height:30px; }
+    a { text-decoration: none; color:#000; } a:visited { color:Green; }
+</style>
+
+    <div>
+        @RenderBody()
+    </div>
+</body>
+</html>

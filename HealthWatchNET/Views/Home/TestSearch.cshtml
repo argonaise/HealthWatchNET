@@ -1,0 +1,581 @@
+﻿@model List<HealthWatchNET.Controllers.StoredPreset>
+@{
+    ViewBag.Title = "TestSearch";
+    Layout = "~/Views/Shared/Layout.cshtml";
+}
+<script type="text/javascript" src="~/Script/datepicker.js">{"describedby":"fd-dp-aria-describedby"}</script>
+<link href="~/css/datepicker.css" rel="stylesheet" type="text/css" />
+
+<style>
+    .iframe 
+    {
+        border-style:dotted;
+        border-top: #000 1px dotted;
+        border-right: #000 1px dotted;
+        border-left: #000 1px dotted;
+        border-bottom: #000 1px dotted;
+    }
+    
+    .itemlist 
+    {
+         padding:4px; line-height:200%; font-family:'Malgun gothic', 'Nanum gothic', Dotum;
+    }
+    
+    .headlabel
+    {
+    }
+</style>
+
+<div id="autocomplete" style="position:absolute; top:0px; left:0px; width:700px; height:300px; display:none;">
+<iframe id="autocomplete_iframe" style="width:100%; height:100%"></iframe>
+</div>
+
+<h2>Step 1. 검사항목 선택</h2>
+<ul style="line-height:150%">
+    <li style="color:green">검사명을 클릭하거나, 검사코드 앞의 체크박스를 선택하여 조회할 검사항목을 추가하세요.</li>
+    <li style="color:Maroon">패널 검사 항목을 선택하시면 패널에 속한 개별 검사항목이 모두 추가됩니다. 일괄 추가된 개별 검사항목은 항목별로 제외 가능합니다.</li>
+    <li>추가된 검사 항목은 프리셋으로 저장하여 나중에 편리하게 이용할 수 있습니다.</li>
+    <li>패키지명을 누르시면 패키지에 속한 검사 항목을 볼 수 있습니다.</li>
+    <li><b style="color:teal">Step 1</b>에서 검사 항목 추가 후 하단 <b style="color:teal">Step 2</b>에 조건을 입력하여 자료를 조회하세요.</li>
+    <li style="color:Red">패키지명, 검사항목명 필터에는 ,(comma)로 구분하여 검색어를 입력할 수 있습니다.</li>
+    <li>예) abdomen, ct, contrast, -non, -3d (ABDOMEN CT CONTRAST 검색에서 NON, 3D 키워드가 포함된 항목은 제외하고 표시)</li>
+</ul>
+
+<script>
+    function loadPackageByName(pkgname) {
+        var obj = document.getElementById("if_package");
+        obj.src = "/Modules/TestPackage?pkgname=" + pkgname;
+    }
+
+    function loadItemByPkgCode(pkgcode) {
+        var obj = document.getElementById("if_test");
+        obj.src = "/Modules/TestItem?pkgcode=" + pkgcode;
+    }
+
+    function loadItemByName(itemname) {
+        var obj = document.getElementById("if_test");
+        obj.src = "/Modules/TestItem?itemname=" + itemname;
+    }
+
+    function addTestItemByCode(tst_cd) {
+        var obj = document.getElementById("if_hidden");
+        obj.src = "/Modules/AddTestItemByCode?tst_cd_each=" + tst_cd;
+    }
+
+    function addPatIvItemByCode(intv_cd) {
+        var obj = document.getElementById("if_hidden");
+        obj.src = "/Modules/AddPatIvItemByCode?intv_cd_each=" + intv_cd;
+    }
+
+    function addTestItemByCheck() {
+        var obj = document.getElementById("if_test");
+        obj.contentWindow.submitCheckAll();
+    }
+
+    function addPatIvItemByCheck() {
+        var obj = document.getElementById("if_pativitem");
+        obj.contentWindow.submitCheckAll();
+    }
+
+    function refreshSelectedList() {
+        document.getElementById('if_selectitem').contentWindow.location.reload(true);
+        //var obj = document.getElementById("if_selectitem");
+        //obj.src = obj.src;
+    }
+
+    function refreshPresetList() {
+        document.getElementById('if_preset').contentWindow.location.reload(true);
+    }
+
+    function addOption(name, code) {
+        var obj = document.getElementById("item_arr");
+        obj.options[obj.options.length] = new Option(name + " - " + code, code);
+    }
+
+    function delOption() {
+        var obj = document.getElementById("if_selectitem");
+        obj.contentWindow.delSelectedItems();
+    }
+
+    function addPreset() {
+        var name = document.getElementById("presetName").value;
+        var obj = document.getElementById("if_hidden");
+        if (confirm('프리셋 저장 후 선택된 검사항목 란을 비우시겠습니까?') == true) {
+            obj.src = "/Modules/AddPreset?clear=1&name=" + encodeURIComponent(name);
+            document.getElementById("presetName").value = "";
+        }
+        else {
+            obj.src = "/Modules/AddPreset?name=" + encodeURIComponent(name);
+        }
+    }
+
+    function loadPreset(name) {
+        var obj = document.getElementById("if_hidden");
+        obj.src = "/Modules/UsePreset?name_each=" + encodeURIComponent(name);
+    }
+
+    function loadCheckedPreset() {
+        var obj = document.getElementById("if_preset");
+        obj.contentWindow.loadCheckedPreset();
+    }
+
+    function delCheckedPreset() {
+        var obj = document.getElementById("if_preset");
+        obj.contentWindow.delCheckedPreset();
+    }
+</script>
+
+<div style="display:none;">
+    <iframe id="if_hidden"></iframe>
+</div>
+<table width="1200" border="0">
+<tr>
+    <td width="300" valign="top">
+        <div style="height:30px;" class="headlabel">
+            <li>패키지명 필터: <input type="text" id="pkgSearch" onkeyup="if (event.keyCode==13) loadPackageByName(this.value);" /></li>
+        </div>
+        <div>
+            <iframe id="if_package" src="/Modules/TestPackage" width="100%" height="200" class="iframe" frameborder="0"></iframe><br />
+        </div>
+        <div style="height:30px; margin-top:5px;">
+            <li>검사항목명 필터: <input type="text" id="itemSearch" onkeyup="if (event.keyCode==13) loadItemByName(this.value);" /></li>
+        </div>
+        <div>
+            <iframe id="if_test" src="/Modules/TestItem" width="100%" height="340" class="iframe" frameborder="0"></iframe><br />
+        </div>
+        <div align="center" style="padding:10px;">
+            <input type="button" value="체크된 항목을 검사항목에 추가" onclick="addTestItemByCheck()" />
+        </div>
+    </td>
+    <td width="400" valign="top">
+        <div style="height:30px;">
+            <li style="padding-top:5px;">환자/문진표 항목</li>
+        </div>
+        <div>
+            <iframe id="if_pativitem" src="/Modules/PatientIvItem" width="100%" height="500" class="iframe" frameborder="0"></iframe>
+        </div>
+        <div align="center" style="padding:10px;">
+            <input type="button" value="체크된 항목을 검사항목에 추가" onclick="addPatIvItemByCheck()" />
+        </div>
+    </td>
+    <td width="400" valign="top">
+        <div style="height:30px;">
+            <li style="padding-top:5px;">저장된 프리셋 목록</li>
+        </div>
+        <div>
+            <iframe id="if_preset" src="/Modules/PresetList" width="100%" height="130" class="iframe" frameborder="0"></iframe>
+        </div>
+        <div align="center" style="padding:10px;">
+            <input type="button" value="프리셋 사용" onclick="loadCheckedPreset()" />
+            <input type="button" value="프리셋 삭제" onclick="delCheckedPreset()" />
+        </div>
+        <div style="height:30px;">
+            <li style="padding-top:5px;">선택된 검사항목</li>
+        </div>
+        <div style="border:1px solid orange; width:100%">
+            <iframe id="if_selectitem" src="/Modules/SelectedItems" width="100%" height="300" class="iframe" frameborder="0"></iframe>
+            </select>
+        </div>
+        <div align="center" style="margin-top:5px;">
+            <input type="button" value="선택된 검사항목 제외" onclick="delOption();" />
+        </div>
+        <div style="padding:5px;">
+            <li>위 목록을 PRESET으로 저장</li>
+        </div>
+        <div align="center">
+            <input type="text" id="presetName" /> <input type="button" value="프리셋 저장" onclick="addPreset()" />
+        </div>
+    </td>
+</tr>
+</table>
+
+<h2>Step 2. 검색조건 선택</h2>
+
+<div style="width:600px; height:300px; display:none;">
+<iframe id="proc_iframe" name="proc_iframe" style="width:100%; height:100%"></iframe>
+</div>
+
+<form method="post" action="/Home/QueryMake" target="proc_iframe">
+<input type="hidden" id="selected_sp_no" name="selected_sp_no" />
+<table width="900" cellpadding="6" cellspacing="0" border="0">
+
+@{
+    int nowYear = DateTime.Now.Year;
+    string today = DateTime.Now.ToString("YYYY-mm-dd");
+}
+<tr>
+    <th bgcolor="#dddddd">수진일자</th>
+    <td></td>
+    <td style="line-height:170%;">
+        한 번의 query 당 수진일자 기준 최대 3년의 데이터를 조회할 수 있습니다.<br />
+        검색범위 시작시점
+        <input type="text" id="p_date_1" name="p_date_1" style="width:75px; text-align:center;" value="@(nowYear - 2)-01-01" />
+		<script type="text/javascript">
+		    var opts = { formElements: { "p_date_1": "Y-ds-m-ds-d"} };
+		    datePickerController.createDatePicker(opts);
+        </script>
+        -
+        검색범위 종료시점
+        <input type="text" id="p_date_2" name="p_date_2" style="width:75px; text-align:center;" value="@nowYear-12-31" />
+		<script type="text/javascript">
+		    var opts = { formElements: { "p_date_2": "Y-ds-m-ds-d"} };
+		    datePickerController.createDatePicker(opts);
+        </script>
+
+    </td>
+</tr>
+
+<tr>
+    <th width="100" bgcolor="#dddddd">환자 성명</th>
+    <td width="23"><input type="checkbox" name="sw_name" /></td>
+    <td>
+        <select name="p_name_op">
+            <option value="equal">정확히 일치</option>
+            <option value="include">일부 포함</option>
+        </select>
+        <input type="text" name="p_name" />
+    </td>
+</tr>
+
+<tr>
+    <th bgcolor="#dddddd">환자 연령</th>
+    <td><input type="checkbox" name="sw_age" /></td>
+    <td>
+        <select name="p_age_op_1">
+            <option value="gt">&gt;</option>
+            <option value="gteq">&gt;=</option>
+            <option value="eq">=</option>
+            <option value="lteq">&lt;=</option>
+            <option value="lt">&lt;</option>
+        </select>
+        <input type="text" name="p_age_1" size="4" /> (숫자로 입력)
+
+        <select name="p_age_between">
+            <option value="">----</option>
+            <option value="and">and</option>
+            <option value="or">or</option>
+        </select>
+
+        <select name="p_age_op_2">
+            <option value="">----</option>
+            <option value="lt">&lt;</option>
+            <option value="lteq">&lt;=</option>
+            <option value="eq">=</option>
+            <option value="gteq">&gt;=</option>
+            <option value="gt">&gt;</option>
+        </select>
+        <input type="text" name="p_age_2" size="4" />
+    </td>
+</tr>
+
+<tr>
+    <th bgcolor="#dddddd">환자 성별</th>
+    <td><input type="checkbox" name="sw_sex" /></td>
+    <td>
+        <select name="p_sex">
+            <option value="">----</option>
+            <option value="M">남자</option>
+            <option value="F">여자</option>
+        </select>
+    </td>
+</tr>
+
+<tr>
+    <th bgcolor="#dddddd">환자 번호</th>
+    <td><input type="checkbox" name="sw_patno" /></td>
+    <td style="line-height:150%; color:Olive;">
+        <li>1행에 환자번호 1건이 들어가도록 입력해 주세요.</li>
+        <li>Excel에서 환자번호 행을 복사하셔서 그대로 붙여 넣으시면 됩니다.</li>
+        <li>(행 제목은 제외하고 데이터만 복사)</li><br />
+        <textarea name="p_patno_arr" cols="60" rows="5"></textarea>
+    </td>
+</tr>
+
+<tr>
+    <th width="100" bgcolor="#dddddd">예약번호</th>
+    <td><input type="checkbox" name="sw_rsvno" /></td>
+    <td>
+        <select name="p_rsvno_op">
+            <option value="equal">정확히 일치</option>
+            <option value="include">일부 포함</option>
+        </select>
+        <input type="text" name="p_rsvno" />
+    </td>
+</tr>
+
+<tr>
+    <th width="100" bgcolor="#dddddd">Package</th>
+    <td><input type="checkbox" name="sw_pkg" /></td>
+    <td style="line-height:170%;">
+        패키지명 :
+        <input type="text" id="ac_pkg_name" size="30" name="p_pkg_name" onkeyup="if ( validKeyCode(event.keyCode ) ) autocomplete_package(this)" />
+        &nbsp;&nbsp;&nbsp;
+
+        패키지코드 :
+        <input type="text" id="ac_pkg_cd" size="10" name="p_pkg_cd" onkeyup="if ( validKeyCode(event.keyCode ) ) autocomplete_package(this)" />
+        <br />
+        <li style="color:red">패키지명 입력은 ,(comma)로 구분하여 검색어를 입력할 수 있습니다.</li>
+        <li>예) 기본, 내시경, -수면 (패키지명에 "기본", "내시경"을 포함하고 "수면"이 포함된 항목은 제외하고 표시)</li>
+    </td>
+</tr>
+
+<tr>
+    <th width="100" bgcolor="#dddddd">검사항목 검색</th>
+    <td></td>
+    <td style="line-height:170%;">
+        검사명 :
+        <input type="text" size="30" id="ac_test1_name" name="p_test1_name" onkeyup="if ( validKeyCode(event.keyCode ) ) autocomplete_testlist('test1',this,'name')" />
+        &nbsp;&nbsp;&nbsp;
+
+        검사코드 :
+        <input type="text" size="10" id="ac_test1_cd" name="p_test1_cd" onkeyup="if ( validKeyCode(event.keyCode ) ) autocomplete_testlist('test1',this,'cd')" /><br />
+
+        <li style="color:Red">검사항목명 입력은 ,(comma)로 구분하여 검색어를 입력할 수 있습니다.</li>
+        <li>예) abdomen, ct, contrast, -non, -3d (ABDOMEN CT CONTRAST 검색에서 NON, 3D 키워드가 포함된 항목은 제외하고 표시)</li><br />
+        <br />
+        
+        검사결과 :
+        <input type="radio" name="p_test1_val_op" value="NOT NULL" checked="checked" /> NOT NULL
+        <div style="padding-left:60px;">
+        <input type="radio" name="p_test1_val_op" value="EXACT" /> 정확히 일치
+            <input type="text" name="p_test1_val_exact" size="20" />
+            <input type="radio" name="p_test1_val_op" value="LIKE" /> 일부 포함
+            <input type="text" name="p_test1_val_like" size="20" />
+        <br />
+        </div>
+    </td>
+</tr>
+<!--
+<tr>
+    <th width="100" bgcolor="#dddddd">검사2</th>
+    <td><input type="checkbox" name="sw_test2" /></td>
+    <td style="line-height:170%;">
+        검사명 :
+        <input type="text" size="30" id="ac_test2_name" name="p_test2_name" onkeyup="if ( validKeyCode(event.keyCode ) ) autocomplete_testlist('test2',this,'name')" />
+        &nbsp;&nbsp;&nbsp;
+
+        검사코드 :
+        <input type="text" size="10" id="ac_test2_cd" name="p_test2_cd" onkeyup="if ( validKeyCode(event.keyCode ) ) autocomplete_testlist('test2',this,'cd')" /><br />
+
+        <font color="olive"><b>자동완성기능 지원</b> : 검사명 혹은 검사코드 일부를 입력 후 나타난 목록에서 선택합니다</font><br />
+        
+        검사결과 : <input type="radio" name="p_test2_val_op" value="NOT NULL" checked="checked" /> NOT NULL
+        <div style="padding-left:60px;">
+            <input type="radio" name="p_test2_val_op" value="EXACT" /> 정확히 일치
+            <input type="text" name="p_test2_val_exact" size="20" />
+            <input type="radio" name="p_test2_val_op" value="LIKE" /> 일부 포함
+            <input type="text" name="p_test2_val_like" size="20" />
+        <br />
+        </div>
+        <br />
+        <div style="background-color: #e0e0e0; padding-left:10px; width:540px; color:olive;"><b>검사 1 - 검사 2 관계</b> : <input type="radio" name="p_test_rel" value="AND" checked /> AND <input type="radio" name="p_test_rel" value="OR" /> OR</div>
+    </td>
+</tr>
+-->
+<tr>
+    <td colspan="3" align="center"><input type="submit" value="검색조건 적용" style="width:200px; height:50px; margin-top:20px;" /></td>
+</tr>
+
+</table>
+</form>
+
+<script type="text/javascript">
+
+    function autocomplete_package(event_obj) {
+        var pkg_cd = document.getElementById("ac_pkg_cd");
+        var pkg_name = document.getElementById("ac_pkg_name");
+
+        if (trim(pkg_cd.value).length > 0 || trim(pkg_name.value).length > 0) {
+            var pos = getOffset(event_obj);
+
+            var div = document.getElementById("autocomplete");
+            div.style.top = pos.top + 30 + 'px';
+            div.style.left = pos.left + 'px';
+            div.style.display = "block";
+
+            var iframe = document.getElementById("autocomplete_iframe");
+            iframe.src = "/Data/AutoCompletePackageList?pkg_cd=" + encodeURIComponent(pkg_cd.value) + "&pkg_name=" + encodeURIComponent(pkg_name.value);
+        }
+    }
+
+    function autocomplete_testlist(selector, event_obj, method) {
+        var test_cd = document.getElementById("ac_" + selector + "_cd");
+        var test_name = document.getElementById("ac_" + selector + "_name");
+
+        if (trim(test_cd.value).length > 0 || trim(test_name.value).length > 0) {
+            var pos = getOffset(event_obj);
+
+            var div = document.getElementById("autocomplete");
+            div.style.top = pos.top + 30 + 'px';
+            div.style.left = pos.left + 'px';
+            div.style.display = "block";
+
+            var iframe = document.getElementById("autocomplete_iframe");
+            iframe.src = "/Data/AutoCompleteTestList?method=" + method + "&selector=" + selector + "&test_cd=" + encodeURIComponent(test_cd.value) + "&test_name=" + encodeURIComponent(test_name.value);
+        }
+    }
+
+    function getOffset(el) {
+        var _x = 0;
+        var _y = 0;
+        while (el && !isNaN(el.offsetLeft) && !isNaN(el.offsetTop)) {
+            _x += el.offsetLeft - el.scrollLeft;
+            //_y += el.offsetTop - el.scrollTop;
+            _y += el.offsetTop;
+            el = el.offsetParent;
+        }
+        return { top: _y, left: _x };
+    }
+
+    function trim(str) {
+        return str.replace(/^\s\s*/, '').replace(/\s\s*$/, '');
+    }
+
+    function autocomplete_abort() {
+        var div = document.getElementById("autocomplete");
+        div.style.top = "0px";
+        div.style.left = "0px";
+        div.style.display = "none";
+    }
+
+    function autocomplete_complete_package(name, code) {
+        document.getElementById("ac_pkg_name").value = name;
+        document.getElementById("ac_pkg_cd").value = code;
+
+        autocomplete_abort();
+    }
+
+    function autocomplete_complete_testlist(selector, r1, r2, method) {
+        if (method == "name") document.getElementById("ac_" + selector + "_name").value = r1;
+        if (method == "cd") document.getElementById("ac_" + selector + "_cd").value = r2;
+
+        autocomplete_abort();
+    }
+
+    function autocomplete_first() {
+        var obj = document.getElementById("autocomplete_iframe");
+        var objDoc = obj.contentWindow || obj.contentDocument;
+        objDoc.autocomplete_first();
+    }
+
+    function validKeyCode(keyCode) {
+        switch (keyCode) {
+            //case 8: // backspace 
+            case 16: // shift
+            case 17: // ctrl
+            case 18: // alt
+            case 20: // caps lock
+            case 35: // end
+            case 36: // home
+            case 37: // left
+            case 38: // up
+            case 39: // right
+            case 40: // down
+            case 45: // insert
+            case 46: // delete
+                return false;
+                break;
+            case 9: // tab
+                autocomplete_abort();
+                return false;
+                break;
+            case 13: // enter
+                autocomplete_first();
+                return false;
+            default:
+                return true;
+        }
+    }
+
+    function autocomplete_query(event_obj) {
+        var pos = getOffset(event_obj);
+
+        var div = document.getElementById("autocomplete");
+        div.style.top = pos.top + 30 + 'px';
+        div.style.left = pos.left + 'px';
+        div.style.display = "block";
+
+        var iframe = document.getElementById("autocomplete_iframe");
+        iframe.src = "/Data/AutoCompleteQuery";
+    }
+
+    function autocomplete_complete_query(desc, query) {
+        document.getElementById("query_desc").value = desc;
+        document.getElementById("query").value = query;
+
+        autocomplete_abort();
+    }
+
+</script>
+
+<form name="ExecForm" method="post" action="@Url.Action("QueryExec", "Home")" target="_blank">
+<input type="hidden" id="sp_no_exec" name="sp_no_exec" />
+<input type="hidden" id="query_cond" name="query_cond" />
+<h2>Step 3. Query 확인 및 실행 <input type="button" value="Query History" onclick="autocomplete_query(this);" /></h2>
+<table width="700" border="0">
+<tr>
+    <td valign="top">
+        <textarea rows="3" cols="80" id="query_desc" name="query_desc" style="background-color:#e0e0e0;"></textarea><br />
+        <textarea rows="10" cols="80" id="query" name="query"></textarea><br />
+        <table>
+            <tr>
+            <td><b>테스트 받기(HTML)</b></td>
+            <td>
+            <input type="radio" name="export_rows" value="100" checked="checked" /> 100건
+            <input type="radio" name="export_rows" value="500" /> 500건
+            <input type="radio" name="export_rows" value="1000" /> 1000건</td>
+            <td width="20">&nbsp;</td>
+            <td><b>전체 데이터 받기(CSV)</b></td>
+            <td><input type="radio" name="export_rows" value="0" />전체 데이터</td>
+            </tr>
+        </table>
+    </td>
+    <td valign="top"><input type="submit" value="QUERY 실행" style="width:100px; height:209px;" /></td>
+</tr>
+</table>
+</form>
+
+
+<script type="text/javascript">
+
+    var edit_preset_no = "";
+
+    function PutExecScript( str, preset_no ) {
+        document.getElementById("query").value = str;
+        document.getElementById("sp_no_exec").value = preset_no;
+    }
+
+    function PutExecString(str) {
+        document.getElementById("query_desc").value = str;
+    }
+
+    function PutExecCond(str) {
+        document.getElementById("query_cond").value = str;
+    }
+
+    function EditPreset() {
+        if ( edit_preset_no == "" ) {
+            alert("프리셋을 선택하세요");
+            return;
+        }
+
+        location.href = "/Home/TestPresetMake/?SP_NO=" + edit_preset_no;
+    }
+
+    function DeletePreset() {
+        selectedIndexes = pset_grid.getSelectedRows();
+
+        var str = '';
+        jQuery.each(selectedIndexes, function (idx, val) {
+            str += pset_grid.getDataItem(val).SP_NO + ";";
+            //alert( pset_grid.getDataItem(val).SP_NO );
+            //alert(s.options.length);
+            //alert(test_grid.getDataItem(idx).TST_CD);
+        });
+        //alert(str);
+        if ( confirm( '선택한 프리셋을 삭제하시겠습니까?' ) ) {
+            location.href = "/Data/PrcDelPreset?SP_NO=" + str;
+        }
+    }
+
+</script>

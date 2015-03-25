@@ -1,0 +1,490 @@
+﻿@model HealthWatchNET.Controllers.HomeController.ViewModelForTestPresetMake
+@using System.Data;
+
+@{
+    ViewBag.Title = "TestPresetMake";
+    Layout = "~/Views/Shared/Layout.cshtml";
+}
+
+<style>
+    .cell-story {
+        white-space: normal !important;
+        line-height: 19px !important;
+    }
+
+    .loading-indicator {
+        display: inline-block;
+        padding: 12px;
+        background: white;
+        -opacity: 0.5;
+        color: black;
+        font-weight: bold;
+        z-index: 9999;
+        border: 1px solid red;
+        -moz-border-radius: 10px;
+        -webkit-border-radius: 10px;
+        -moz-box-shadow: 0 0 5px red;
+        -webkit-box-shadow: 0px 0px 5px red;
+        -text-shadow: 1px 1px 1px white;
+    }
+
+    .loading-indicator label {
+        padding-left: 20px;
+        font-family: "Malgun gothic", "NanumGothic", "AppleGothic", "Dotum";
+        font-size: 14px;
+        font-weight: bold;
+        background: url('~/Images/site/ajax-loader-small.gif') no-repeat center left;
+    }
+    
+    .slick-highlighted
+    {
+        background: #EEEEAA;
+    }
+    
+    .slick-viewport {
+       overflow-x: hidden !important;
+    }
+    
+    .slick-cell-checkboxsel {
+      background: #f0f0f0;
+      border-right-color: silver;
+      border-right-style: solid;
+    }
+</style>
+
+<h2>자료 검색 : 검사항목 프리셋 만들기</h2>
+<ul>
+    <li>패키지이름을 검색한 후 패키지에 포함된 검사항목을 선택하시거나,</li>
+    <li>검사항목 이름을 직접 검색하셔서 검사항목을 선택하세요.</li>
+    <li>선택하신 항목을 오른쪽 리스트에 추가하셔서 프리셋을 저장하실 수 있습니다.</li>
+</ul>
+<table width="1170" border="0" align="center">
+<tr align="center">
+    <th width="300" align="left">
+        <li>패키지명 검색:
+        <input type="text" id="pkgSearch" /></li>
+    </th>
+    <th width="400" align="left">
+        <li>검사명 검색:
+        <input type="text" id="testSearch" /></li>
+    </th>
+    <th></th>
+    <th width="400">
+        추가된 검사 항목
+    </th>
+</tr>
+@using (Html.BeginForm("PrcSavePreset", "Data", FormMethod.Post, new { name="PresetForm" } ))
+{
+<tr>
+    <td width="300" valign="top">
+        <div id="packageGrid" class="slickgrid" style="width:300px; height:300px; border:1px solid #C0C0C0;">
+        <iframe src="/Modules/
+        </div>
+    </td>
+    <td width="400" valign="top">
+        <div id="testGrid" class="slickgrid" style="width:400px; height:300px; border:1px solid #C0C0C0;"></div>
+    </td>
+    <th valign="middle" align="center" width="70">
+        <input type="button" value="&gt;&gt;" onclick="addTestItem()" style="width:50px; height:50px;" /><br />
+        <br />
+        <input type="button" value="&lt;&lt;" onclick="removeTestItem()" style="width:50px; height:50px;" />
+    </th>
+    <td width="400" valign="top" align="left" rowspan="2">
+        <li>Ctrl or Shift + 좌측 버튼 클릭로 다중 선택 가능</li>
+        <table>
+        <tr>
+            <td>
+                <select id="preset_test" name="preset_test_arr" style="width:360px; height:500px; padding:4px; line-height:200%; font-family:'Malgun gothic', 'Nanum gothic', Dotum;" size="10" multiple="multiple">
+                @if (@Model.tests != null)
+                {
+                    foreach (KeyValuePair<string, string> test in @Model.tests)
+                    {
+                    <option value="@test.Key">@test.Value</option>
+                    }
+                }
+                </select>
+                <input type="hidden" name="preset_test_code" />
+                <input type="hidden" name="preset_test_name" />
+                <input type="hidden" name="sp_no" value="@Model.sp_no" />
+            </td>
+        </tr>
+        <tr>
+            <th>검사항목 프리셋 이름 : <input type="text" name="preset_name" size="30" value="@Model.preset_name" /></th>
+        </tr>
+        <tr>
+            <th>
+                <input type="button" value="이전으로 돌아가기" onclick="location.href='/Home/TestSearch'" style="width:150px; height:50px;" />
+                <input type="button" value="프리셋 저장" onclick="saveTestPreset()" style="width:150px; height:50px; color:blue; font-weight:bold;" />
+            </th>
+        </tr>
+        </table>
+    </td>
+</tr>
+}
+<tr>
+    <td>
+    </td>
+    <td>
+        <div id="interviewGrid" class="slickgrid" style="width:400px; height:300px; border:1px solid #C0C0C0;"></div>
+    </td>
+    <th valign="middle" align="center" width="70">
+        <input type="button" value="&gt;&gt;" onclick="addIntvItem()" style="width:50px; height:50px;" /><br />
+        <br />
+        <input type="button" value="&lt;&lt;" onclick="removeIntvItem()" style="width:50px; height:50px;" />
+    </th>
+    <td></td>
+</tr>
+</table>
+
+<script type="text/javascript">
+
+    var selectedIndexes;
+
+    function saveTestPreset() {
+        var f = document.forms["PresetForm"];
+
+        if (f.preset_name.value == '') {
+            alert('저장할 프리셋 이름을 입력하세요');
+            return false;
+        }
+
+        var s = document.getElementById("preset_test");
+        var str = "";
+        var str_name = "";
+        for (var i = 0; i < s.options.length; i++) {
+            str += s.options[i].value + ";";
+            str_name += s.options[i].text + "^";
+        }
+
+        if (str == '') {
+            alert('검사항목을 하나 이상 선택하세요');
+            return false;
+        }
+        else {
+            f.preset_test_code.value = str;
+            f.preset_test_name.value = str_name;
+        }
+
+        f.submit();
+    }
+
+    function unselectTestItem() {
+        test_grid.setSelectedRows([]);
+    }
+
+    function unselectIntvItem() {
+        intv_grid.setSelectedRows([]);
+    }
+
+    function addTestItem() {
+        selectedIndexes = test_grid.getSelectedRows();
+        var s = document.getElementById("preset_test");
+        //alert(selectedIndexes);
+
+        jQuery.each(selectedIndexes, function (idx, val) {
+            //str += pset_grid.pset_grid.getDataItem(val).SP_NO;
+            s.options[s.options.length] = new Option(test_grid.getDataItem(val).TST_NAME + " / " + test_grid.getDataItem(val).TST_CD, test_grid.getDataItem(val).TST_CD);
+            //alert(s.options.length);
+            //alert(test_grid.getDataItem(idx).TST_CD);
+        });
+
+        unselectTestItem();
+    }
+
+    function removeTestItem() {
+        var s = document.getElementById("preset_test");
+        var selected = new Array();
+        for (var i = 0; i < s.options.length; i++) {
+            if (s.options[i].selected == true) {
+                selected.push(i);
+            }
+        }
+        var c;
+        for (i = selected.length - 1; i >=0; i--) {
+            c = selected[i];
+            //alert(i + " => " + s.options[c].text + " => " + s.options[c].selected);
+            s.remove(c);
+        }
+    }
+
+    function addIntvItem() {
+        selectedIndexes = intv_grid.getSelectedRows();
+        var s = document.getElementById("preset_test");
+
+        var code = "", prefix = "", ptype = "";
+        jQuery.each(selectedIndexes, function (idx, val) {
+            //str += pset_grid.pset_grid.getDataItem(val).SP_NO;
+            code = intv_grid.getDataItem(val).INTV_CD;
+            prefix = code.substring(0, code.indexOf("."));
+            if ( prefix == "P" ) {
+                ptype = "(환자정보)";
+            }
+            if ( prefix == "R" ) {
+                ptype = "(예약정보)";
+            }
+            if ( prefix == "I3" ) {
+                ptype = "(문진표)";
+            }
+            s.options[s.options.length] = new Option(ptype + " " + intv_grid.getDataItem(val).INTV_NAME + " / " + intv_grid.getDataItem(val).INTV_CD, intv_grid.getDataItem(val).INTV_CD);
+            //alert(s.options.length);
+            //alert(test_grid.getDataItem(idx).TST_CD);
+        });
+
+        unselectIntvItem();
+    }
+
+    function removeIntvItem() {
+        var s = document.getElementById("preset_test");
+        var selected = new Array();
+        for (var i = 0; i < s.options.length; i++) {
+            if (s.options[i].selected == true) {
+                selected.push(i);
+            }
+        }
+        var c;
+        for (i = selected.length - 1; i >=0; i--) {
+            c = selected[i];
+            //alert(i + " => " + s.options[c].text + " => " + s.options[c].selected);
+            s.remove(c);
+        }
+    }
+
+    function isDuplicate(tst_cd) {
+        var s = document.getElementById("preset_test");
+    }
+
+    var pkg_grid;
+    var pkg_loader = new Slick.Data.RemoteModelPackage();
+
+    var pkgNameFormatter = function (row, cell, value, columnDef, dataContext) {
+        return "<a href='javascript:parent.viewPkg(\"" + dataContext["PKGCODE"] + "\"," + dataContext["index"] + ");' onfocus='blur();'>" + dataContext["PKGNAME"] + "</a>";
+    };
+
+    var pkg_columns = [
+        { id: "NO", name: "#", field: "NO", width: 50, sortable: false, cssClass: "slick-center", headerCssClass: "slick-center" },
+        { id: "PKGNAME", name: "패키지명", field: "PKGNAME", width: 250, sortable: false, headerCssClass: "slick-center", formatter: pkgNameFormatter }
+    ];
+
+    var pkg_options = {
+        rowHeight: 30,
+        editable: false,
+        enableAddRow: false,
+        enableColumnReorder: false,
+        enableCellNavigation: false
+    };
+
+    var pkg_loadingIndicator = null;
+
+    //----------------------------------------------------------------------------------------------------------------------------------------------
+
+    var test_grid;
+    var test_loader = new Slick.Data.RemoteModelPackageItem();
+
+    var testCheckFormatter = function (row, cell, value, columnDef, dataContext) {
+        return "<input type=\"checkbox\" name=\"testItemCheck\" value=\"" + dataContext["TST_CD"] + "^^" + dataContext["TST_NAME"] + "\" />";
+    };
+
+    var checkboxSelector = new Slick.CheckboxSelectColumn( { id: "CHECK", field:"NO", width:30, cssClass: "slick-cell-checkboxsel" } );
+
+    var test_columns = [
+        checkboxSelector.getColumnDefinition(),
+        //{ id: "CHECK", name: "<input type=\"checkbox\" onclick=\"toggleCheck();\" style=\"cursor:pointer;\">", field: "NO", width: 50, sortable: false, cssClass: "slick-center", headerCssClass: "slick-center", formatter: testCheckFormatter },
+        { id: "TST_CD", name: "검사코드", field: "TST_CD", width: 110, sortable: true, cssClass: "slick-center", headerCssClass: "slick-center" },
+        { id: "TST_NAME", name: "검사명", field: "TST_NAME", width: 260, sortable: true, cssClass: "slick-center", headerCssClass: "slick-center" }
+    ];
+
+    var test_options = {
+        rowHeight: 30,
+        editable: false,
+        enableAddRow: false,
+        enableColumnReorder: false,
+        enableCellNavigation: false
+    };
+
+    var test_loadingIndicator = null;
+
+    function toggleCheck() {
+        alert(document.getElementsByName("testItemCheck").length);
+    }
+
+    //----------------------------------------------------------------------------------------------------------------------------------------------
+
+    var intv_grid;
+
+    var psetNameFormatter = function (row, cell, value, columnDef, dataContext) {
+        return "<a href=\"javascript:parent.viewPset('" + dataContext["INTV_CD"] + "', '" + dataContext["index"] + "');\" onfocus=\"blur();\">" + dataContext["INTV_NAME"] + "</a>";
+    };
+
+    var checkboxSelectorIntv = new Slick.CheckboxSelectColumn( { id: "CHECK_INTV", field:"INTV_CD", width:30, cssClass: "slick-cell-checkboxsel" } );
+
+    var intv_columns = [
+        checkboxSelectorIntv.getColumnDefinition(),
+        { id: "INTV_CD", name: "통합검색코드", field: "INTV_CD", width: 110, sortable: false, cssClass: "slick-center", headerCssClass: "slick-center" },
+        { id: "INTV_NAME", name: "통합검색항목", field: "INTV_NAME", width: 260, sortable: false, cssClass: "slick-center", headerCssClass: "slick-center", formatter: psetNameFormatter }
+    ];
+
+    var intv_options = {
+        rowHeight: 30,
+        editable: false,
+        enableAddRow: false,
+        enableColumnReorder: false,
+        enableCellNavigation: false
+    };
+
+    var intv_loadingIndicator = null;
+
+    var intv_data = [];
+    @{
+        int cnt_intv = 0;
+
+        foreach( DataRow row in Model.InterviewItem.Rows )
+        {
+            @Html.Raw("intv_data[" + cnt_intv + "] = {CNT: " + (cnt_intv + 1) + ", INTV_CD: '" + row["INTV_CD"] + "', INTV_NAME: '" + row["INTV_NAME"] + "' };\n");
+            cnt_intv++;
+        }
+    }
+
+    //----------------------------------------------------------------------------------------------------------------------------------------------
+
+    $(function () {
+        pkg_grid = new Slick.Grid("#packageGrid", pkg_loader.data, pkg_columns, pkg_options);
+
+        pkg_grid.onViewportChanged.subscribe(function (e, args) {
+            var vp = pkg_grid.getViewport();
+            pkg_loader.ensureData(vp.top, vp.bottom);
+        });
+
+        pkg_grid.onSort.subscribe(function (e, args) {
+            pkg_loader.setSort(args.sortCol.field, args.sortAsc ? 1 : -1);
+            var vp = pkg_grid.getViewport();
+            pkg_loader.ensureData(vp.top, vp.bottom);
+        });
+
+        pkg_loader.onDataLoading.subscribe(function () {
+            if (!pkg_loadingIndicator) {
+                pkg_loadingIndicator = $("<span class='loading-indicator'><label><img src=\"/Image/site/ajax-loader-small.gif\" /> 데이터 읽는중...</label></span>").appendTo(document.body);
+                var $g = $("#packageGrid");
+
+                pkg_loadingIndicator
+                    .css("position", "absolute")
+                    .css("top", $g.position().top + $g.height() / 2 - pkg_loadingIndicator.height() / 2)
+                    .css("left", $g.position().left + $g.width() / 2 - pkg_loadingIndicator.width() / 2);
+            }
+
+            pkg_loadingIndicator.show();
+        });
+
+        pkg_loader.onDataLoaded.subscribe(function (e, args) {
+            for (var i = args.from; i <= args.to; i++) {
+                pkg_grid.invalidateRow(i);
+            }
+
+            pkg_grid.updateRowCount();
+            pkg_grid.render();
+
+            pkg_loadingIndicator.fadeOut();
+        });
+
+        $("#pkgSearch").keyup(function (e) {
+            if (e.which == 13) {
+                pkg_loader.setSearch(encodeURIComponent($(this).val()));
+                var vp = pkg_grid.getViewport();
+                pkg_loader.ensureData(vp.top, vp.bottom);
+            }
+        });
+
+        //----------------------------------------------------------------------------------------------------------------------------------------------
+
+        test_grid = new Slick.Grid("#testGrid", test_loader.data, test_columns, test_options);
+        test_grid.setSelectionModel(new Slick.RowSelectionModel({selectActiveRow: false}));
+        test_grid.registerPlugin(checkboxSelector);
+
+        var columnpicker = new Slick.Controls.ColumnPicker(test_columns, test_grid, test_options);
+
+        test_grid.onViewportChanged.subscribe(function (e, args) {
+            var vp = test_grid.getViewport();
+            test_loader.ensureData(vp.top, vp.bottom);
+        });
+
+        test_grid.onSort.subscribe(function (e, args) {
+            test_loader.setSort(args.sortCol.field, args.sortAsc ? 1 : -1);
+            var vp = test_grid.getViewport();
+            test_loader.ensureData(vp.top, vp.bottom);
+        });
+
+        test_loader.onDataLoading.subscribe(function () {
+            if (!test_loadingIndicator) {
+                test_loadingIndicator = $("<span class='loading-indicator'><label><img src=\"/Image/site/ajax-loader-small.gif\" /> 데이터 읽는중...</label></span>").appendTo(document.body);
+                var $g = $("#testGrid");
+                //alert($g.position().top);
+
+                test_loadingIndicator
+                .css("position", "absolute")
+                .css("top", $g.position().top + $g.height() / 2 - test_loadingIndicator.height() / 2)
+                .css("left", $g.position().left + $g.width() / 2 - test_loadingIndicator.width() / 2);
+            }
+
+            test_loadingIndicator.show();
+        });
+
+        test_loader.onDataLoaded.subscribe(function (e, args) {
+            for (var i = args.from; i <= args.to; i++) {
+                test_grid.invalidateRow(i);
+            }
+
+            test_grid.updateRowCount();
+            test_grid.render();
+
+            test_loadingIndicator.fadeOut();
+        });
+
+        $("#testSearch").keyup(function (e) {
+            if (e.which == 13) {
+                test_loader.setItemSearch(encodeURIComponent($(this).val()));
+                var vp = test_grid.getViewport();
+                test_loader.ensureData(vp.top, vp.bottom);
+            }
+        });
+
+        //----------------------------------------------------------------------------------------------------------------------------------------------
+
+        intv_grid = new Slick.Grid("#interviewGrid", intv_data, intv_columns, intv_options);
+        intv_grid.setSelectionModel(new Slick.RowSelectionModel({ selectActiveRow: false }));
+        intv_grid.registerPlugin(checkboxSelectorIntv);
+
+        var columnpicker = new Slick.Controls.ColumnPicker(intv_columns, intv_grid, intv_options);
+
+        //----------------------------------------------------------------------------------------------------------------------------------------------
+
+        // load the first page
+        pkg_grid.onViewportChanged.notify();
+        test_grid.onViewportChanged.notify();
+    })
+
+    var package_selected = false;
+
+    function viewPkg(pkgcode, index) {
+        var hash = {};
+        index = index - 1;
+        //hash[index] = { "NO": "slick-highlighted", "PKGNAME": "slick-highlighted" };
+        //pkg_grid.setCellCssStyles("slick-highlighted", hash);
+        //loadGrid();
+
+        unselectIntvItem();
+        unselectTestItem();
+
+        if (package_selected == false) {
+            test_grid.onViewportChanged.notify();
+            package_selected = true;
+        }
+
+        test_loader.setPackageSearch(pkgcode);
+        var vp = test_grid.getViewport();
+        test_loader.ensureData(vp.top, vp.bottom);
+    }
+
+    function addTest(testcode, testname, index) {
+        alert(testcode);
+    }
+
+</script>

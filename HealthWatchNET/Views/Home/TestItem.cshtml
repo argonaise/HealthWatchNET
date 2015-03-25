@@ -1,0 +1,133 @@
+﻿@{
+    ViewBag.Title = "TestItem";
+    Layout = "~/Views/Shared/Layout.cshtml";
+}
+<script type="text/javascript" src="~/Script/jquery-1.7.min.js"></script>
+<script type="text/javascript" src="~/Script/jquery.event.drag-2.2.js"></script>
+<script type="text/javascript" src="~/Script/jquery.jsonp-1.1.0.min.js"></script>
+
+<script type="text/javascript" src="~/Script/RemoteModel/slick.testitem.js"></script>
+<script type="text/javascript" src="~/Script/slick.core.js"></script>
+<script type="text/javascript" src="~/Script/slick.grid.js"></script>
+
+<style>
+    .cell-story {
+        white-space: normal !important;
+        line-height: 19px !important;
+    }
+
+    .loading-indicator {
+        display: inline-block;
+        padding: 12px;
+        background: white;
+        -opacity: 0.5;
+        color: black;
+        font-weight: bold;
+        z-index: 9999;
+        border: 1px solid red;
+        -moz-border-radius: 10px;
+        -webkit-border-radius: 10px;
+        -moz-box-shadow: 0 0 5px red;
+        -webkit-box-shadow: 0px 0px 5px red;
+        -text-shadow: 1px 1px 1px white;
+    }
+
+    .loading-indicator label {
+        padding-left: 20px;
+        font-family: "Malgun gothic", "NanumGothic", "AppleGothic", "Dotum";
+        font-size: 14px;
+        font-weight: bold;
+        background: url('~/Images/site/ajax-loader-small.gif') no-repeat center left;
+    }
+</style>
+
+<h2>검사항목 검색</h2>
+
+<table>
+<tr>
+    <td>
+    <div style="float:right; display:inline-block;">
+    검사명 찾아보기: <input type="text" id="txtSearch" value="" />
+    </div>
+    </td>
+</tr>
+<tr>
+    <td>
+    <div id="myAjaxGrid" class="slickgrid" style="width:700px; height:600px; border:1px solid #C0C0C0;"></div>
+    </td>
+</tr>
+</table>
+
+<script type="text/javascript">
+    var ajax_grid;
+    var loader = new Slick.Data.RemoteModelItem();
+
+    var ajax_columns = [
+        { id: "NO", name: "#", field: "NO", width: 50, sortable: true, cssClass: "slick-center", headerCssClass: "slick-center" },
+        { id: "TST_CD", name: "검사코드", field: "TST_CD", width: 150, sortable: true, cssClass: "slick-center", headerCssClass: "slick-center" },
+        { id: "TST_NAME", name: "검사명", field: "TST_NAME", width: 300, sortable: true, headerCssClass: "slick-center" },
+        //{ id: "TABLE_NAME", name: "형태", field: "TABLE_NAME", width: 100, cssClass: "slick-center", headerCssClass: "slick-center" },
+        { id: "SET_SDATE", name: "첫 검사일", field: "SET_SDATE", width: 170, cssClass: "slick-center", headerCssClass: "slick-center" },
+    ];
+
+    var ajax_options = {
+        rowHeight: 30,
+        editable: false,
+        enableAddRow: false,
+        enableColumnReorder: false,
+        enableCellNavigation: false
+    };
+
+    var loadingIndicator = null;
+
+    $(function () {
+        ajax_grid = new Slick.Grid("#myAjaxGrid", loader.data, ajax_columns, ajax_options);
+
+        ajax_grid.onViewportChanged.subscribe(function (e, args) {
+            var vp = ajax_grid.getViewport();
+            loader.ensureData(vp.top, vp.bottom);
+        });
+
+        ajax_grid.onSort.subscribe(function (e, args) {
+            loader.setSort(args.sortCol.field, args.sortAsc ? 1 : -1);
+            var vp = ajax_grid.getViewport();
+            loader.ensureData(vp.top, vp.bottom);
+        });
+
+        loader.onDataLoading.subscribe(function () {
+            if (!loadingIndicator) {
+                loadingIndicator = $("<span class='loading-indicator'><label><img src=\"/Image/site/ajax-loader-small.gif\" /> 데이터 읽는중...</label></span>").appendTo(document.body);
+                var $g = $("#myAjaxGrid");
+
+                loadingIndicator
+                    .css("position", "absolute")
+                    .css("top", $g.position().top + $g.height() / 2 - loadingIndicator.height() / 2)
+                    .css("left", $g.position().left + $g.width() / 2 - loadingIndicator.width() / 2);
+            }
+
+            loadingIndicator.show();
+        });
+
+        loader.onDataLoaded.subscribe(function (e, args) {
+            for (var i = args.from; i <= args.to; i++) {
+                ajax_grid.invalidateRow(i);
+            }
+
+            ajax_grid.updateRowCount();
+            ajax_grid.render();
+
+            loadingIndicator.fadeOut();
+        });
+
+        $("#txtSearch").keyup(function (e) {
+            if (e.which == 13) {
+                loader.setSearch(encodeURIComponent($(this).val()));
+                var vp = ajax_grid.getViewport();
+                loader.ensureData(vp.top, vp.bottom);
+            }
+        });
+
+        // load the first page
+        ajax_grid.onViewportChanged.notify();
+    })
+</script>

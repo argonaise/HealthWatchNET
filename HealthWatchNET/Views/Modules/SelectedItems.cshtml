@@ -1,0 +1,71 @@
+﻿@model HealthWatchNET.Table
+@{
+    ViewBag.Title = "SelectedItems";
+    Layout = "~/Views/Modules/ModuleLayout.cshtml";
+}
+
+<script>
+    function clickall(toggle) {
+        var code_arr = document.getElementsByName("cd[]");
+
+        var cnt = 0;
+        for (var i = 0; i < code_arr.length; i++) {
+            code_arr[i].checked = toggle;
+        }
+    }
+
+    function unclickall() {
+        var code_arr = document.getElementsByName("cd[]");
+
+        var cnt = 0;
+        for (var i = 0; i < code_arr.length; i++) {
+            code_arr[i].checked = false;
+        }
+    }
+
+    function delSelectedItems() {
+        var obj = document.getElementById("SelectForm");
+        obj.action = "/Modules/DelSelectedItems";
+        obj.submit();
+    }
+</script>
+
+<table cellpadding="0" cellspacing="0" border="0" width="99.5%" class="cell_table">
+<form id="SelectForm" method="post">
+<tr class="cell_tr">
+    <td class="cell_th" width="30">#</td>
+    <td class="cell_th" width="30"><input type="checkbox" onclick="clickall(this.checked)" /></td>
+    <td class="cell_th" width="120">항목코드</td>
+    <td class="cell_th_rt">항목명</td>
+</tr>
+@{
+    Dictionary<string, object> ret = new Dictionary<string, object>();
+    int cnt = 0;
+    string test_cd = "";
+    string test_nm = "";
+}
+@while(Model.FetchTo(out ret) == true)
+{
+    test_cd = ret["PANEL_CD"].ToString();
+    test_nm = ret["PANEL_NM"].ToString();
+    
+    if (ret["PANEL_CD"].Equals(ret["TEST_CD"]) == false)
+    {
+        test_cd = ret["PANEL_CD"] + "<br />" + ret["TEST_CD"];
+    }
+    
+    if (ret["PANEL_NM"].Equals(ret["TEST_NM"]) == false)
+    {
+        test_nm = ret["PANEL_NM"] + "<br />" + ret["TEST_NM"];
+    }
+
+    cnt++;
+<tr class="cell_tr">
+    <td class="cell_td" width="30">@cnt</td>
+    <td class="cell_td" width="30"><input type="checkbox" name="cd[]" value="@ret["PANEL_CD"]!!@ret["TEST_CD"]!!@ret["SEQ"]!!@ret["USER_ID"]" /></td>
+    <td class="cell_td" width="120">@Html.Raw(test_cd)</td>
+    <td class="cell_td">@Html.Raw(test_nm)</td>
+</tr>
+}
+</form>
+</table>

@@ -1,0 +1,56 @@
+﻿@model System.Data.DataTable
+@{
+    ViewBag.Title = "PatientItem";
+    Layout = "~/Views/Modules/ModuleLayout.cshtml";
+}
+
+<script>
+    function clickall(toggle) {
+        var code_arr = document.getElementsByName("intv_cd[]");
+
+        var cnt = 0;
+        for (var i = 0; i < code_arr.length; i++) {
+            code_arr[i].checked = toggle;
+        }
+    }
+
+    function unclickall() {
+        var code_arr = document.getElementsByName("intv_cd[]");
+
+        var cnt = 0;
+        for (var i = 0; i < code_arr.length; i++) {
+            code_arr[i].checked = false;
+        }
+    }
+
+    function submitCheckAll() {
+        var obj = document.getElementById("checkform");
+        obj.action = "/Modules/AddPatIvItemByCode";
+        obj.submit();
+    }
+</script>
+
+<table cellpadding="0" cellspacing="0" border="0" width="99.5%" class="cell_table">
+<form id="checkform" method="post">
+<tr class="cell_tr">
+    <td class="cell_th" width="30">#</td>
+    <td class="cell_th" width="30"><input type="checkbox" onclick="clickall(this.checked)" /></td>
+    <td class="cell_th" width="120">항목코드</td>
+    <td class="cell_th_rt">항목명</td>
+</tr>
+@{
+    Dictionary<string, object> ret = new Dictionary<string, object>();
+    int cnt = 0;
+}
+@foreach (System.Data.DataRow row in Model.Rows)
+{
+    cnt++;
+<tr class="cell_tr">
+    <td class="cell_td" width="30">@cnt</td>
+    <td class="cell_td" width="30"><input type="checkbox" name="intv_cd[]" value="@row["INTV_CD"]" /></td>
+    <td class="cell_td" width="120">@row["INTV_CD"]</td>
+    <td class="cell_td"><a href="javascript:parent.addPatIvItemByCode('@row["INTV_CD"]')">@row["INTV_NAME"]</a></td>
+</tr>
+}
+</form>
+</table>
